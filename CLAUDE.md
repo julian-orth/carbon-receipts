@@ -7,6 +7,8 @@ Decisions log: `docs/decisions.md` — add a short entry for every non-obvious c
 
 - `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test` · `npm run format`
 - DB: `npm run db:start` · `db:reset` · `db:test` (pgTAP) · `db:types` (regenerate after every migration)
+- E2E: `npm run test:e2e` (needs `db:start` + `functions:serve` with `LLM_PROVIDERS=mock`)
+- Deployment steps: `docs/deploy.md`
 - Before committing, all of these must pass: `npm run format:check && npm run lint && npm run typecheck && npm test`
 
 ## Rules
