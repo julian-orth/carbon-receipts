@@ -3,6 +3,7 @@ import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { ReceiptsPage } from '@/features/receipts/ReceiptsPage'
+import { ReviewPage } from '@/features/review/ReviewPage'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
 import { RootLayout } from './RootLayout'
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <HomePage /> },
           { path: 'receipts', element: <ReceiptsPage /> },
+          { path: 'receipts/:receiptId', element: <ReviewPage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

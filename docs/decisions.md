@@ -150,3 +150,17 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
 - The daily quota is consumed atomically in Postgres (`consume_ai_quota`) right before the LLM
   call; only `service_role` may execute it.
 - Re-processing replaces earlier line items, so a retry is idempotent.
+
+## 015 – Review: per-item forms, same formula, corrections are learned
+
+- Every line item is its own small form (React Hook Form + Zod). The CO₂e preview uses the same
+  `calculateCo2e` as the pipeline, so what the user sees is exactly what gets stored, together
+  with the factor and a link to its source.
+- Items are flagged (not re-sorted) when the category is missing or uncertain (confidence < 0.7)
+  or no CO₂e could be calculated. Re-sorting after each save would move the row being edited.
+- Changing the category upserts a user mapping (`normalized_name → category`); the next receipt
+  with the same product skips the model's guess. The upsert needs an update grant on
+  `normalized_name`, RLS still limits it to the user's own rows.
+- "Beleg bestätigen" marks all items as reviewed and moves the receipt `review → done` – the only
+  transition besides retry that the database allows for users. Only `done` receipts count in the
+  dashboard.
