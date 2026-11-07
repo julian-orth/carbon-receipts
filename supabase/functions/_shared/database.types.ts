@@ -298,13 +298,63 @@ export type Database = {
       }
     }
     Views: {
+      line_item_emissions: {
+        Row: {
+          category_group: string | null
+          category_id: string | null
+          category_label: string | null
+          category_slug: string | null
+          co2e_kg: number | null
+          id: string | null
+          month: string | null
+          purchased_on: string | null
+          quantity: number | null
+          raw_text: string | null
+          receipt_id: string | null
+          unit: Database['public']['Enums']['emission_unit'] | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'line_items_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'emission_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'line_items_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'monthly_emissions'
+            referencedColumns: ['category_id']
+          },
+          {
+            foreignKeyName: 'line_items_receipt_id_user_id_fkey'
+            columns: ['receipt_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'receipts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       monthly_emissions: {
         Row: {
+          category_group: string | null
           category_id: string | null
           category_label: string | null
           category_slug: string | null
           month: string | null
           sum_co2e_kg: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      monthly_totals: {
+        Row: {
+          month: string | null
+          receipt_count: number | null
+          total_co2e_kg: number | null
           user_id: string | null
         }
         Relationships: []
