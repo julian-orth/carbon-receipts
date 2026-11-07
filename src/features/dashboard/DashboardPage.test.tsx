@@ -44,8 +44,9 @@ describe('DashboardPage', () => {
       factor('veggie-patty', 'Veggie-Burger & Bratlinge', 1.1, 'plant_protein'),
     ])
     mockedApi.fetchMonthlyTotals.mockResolvedValue([
-      { month: '2026-10-01', total_co2e_kg: 20 },
-      { month: '2026-11-01', total_co2e_kg: 15 },
+      { month: '2026-09-01', total_co2e_kg: 20 },
+      { month: '2026-10-01', total_co2e_kg: 15 },
+      { month: '2026-11-01', total_co2e_kg: 5 },
     ])
     mockedApi.fetchGroupTotals.mockResolvedValue([
       { month: '2026-10-01', category_group: 'meat_fish', sum_co2e_kg: 27 },
@@ -79,14 +80,14 @@ describe('DashboardPage', () => {
     renderDashboard()
 
     expect(await screen.findByText('Dieser Monat (laufend)')).toBeInTheDocument()
-    expect(tile('Dieser Monat (laufend)')).toHaveTextContent('15 kg CO₂e')
-    expect(tile('Vormonat')).toHaveTextContent(/20 kg CO₂e[-−]25\s%\sim laufenden Monat/)
-    expect(tile('Summe, letzte 6 Monate')).toHaveTextContent('35 kg CO₂e')
+    expect(tile('Dieser Monat (laufend)')).toHaveTextContent('5 kg CO₂e')
+    expect(tile('Vormonat (Okt. 26)')).toHaveTextContent(/15 kg CO₂e[-−]25\s%\sggü\. Sept\. 26/)
+    expect(tile('Summe, letzte 6 Monate')).toHaveTextContent('40 kg CO₂e')
 
     const trend = screen.getByRole('region', { name: 'Verlauf' })
     const table = within(trend).getByRole('table', { name: 'CO₂e pro Monat' })
     expect(within(table).getAllByRole('row')).toHaveLength(7) // header + 6 months
-    expect(within(table).getByRole('row', { name: 'Okt. 26 20 kg CO₂e' })).toBeInTheDocument()
+    expect(within(table).getByRole('row', { name: 'Okt. 26 15 kg CO₂e' })).toBeInTheDocument()
 
     const hotspots = screen.getByRole('region', { name: 'Hotspots' })
     expect(within(hotspots).getByText('Rinderhack 500g')).toBeInTheDocument()
@@ -104,9 +105,7 @@ describe('DashboardPage', () => {
     renderDashboard()
     const goal = await screen.findByRole('region', { name: 'Monatsziel' })
     expect(within(goal).getByText('Im Plan')).toBeInTheDocument()
-    expect(
-      within(goal).getByText('Noch 35 kg CO₂e bis zum Ziel in diesem Monat.'),
-    ).toBeInTheDocument()
+    expect(within(goal).getByText('Noch 45 kg CO₂e bis zum Ziel.')).toBeInTheDocument()
   })
 
   it('switches the range', async () => {

@@ -21,7 +21,8 @@ export async function fetchGroupTotals(fromMonth: string): Promise<GroupRow[]> {
   return data
 }
 
-export async function fetchHotspots(fromMonth: string, limit = 5): Promise<HotspotRow[]> {
+/** The biggest items; the top 5 are shown, all of them feed the alternatives. */
+export async function fetchHotspots(fromMonth: string, limit = 20): Promise<HotspotRow[]> {
   const { data, error } = await supabase
     .from('line_item_emissions')
     .select('id, raw_text, quantity, unit, co2e_kg, category_slug, category_label, purchased_on')

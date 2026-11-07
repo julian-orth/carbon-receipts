@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMonthSeries,
-  compareWithPreviousMonth,
+  compareCompletedMonths,
   type FactorRef,
   goalProgress,
   type HotspotRow,
@@ -62,27 +62,32 @@ describe('sumByGroup', () => {
   })
 })
 
-describe('compareWithPreviousMonth', () => {
-  it('computes the delta to the previous month', () => {
+describe('compareCompletedMonths', () => {
+  it('compares the last complete month with the one before, ignoring the running month', () => {
     const series = buildMonthSeries(
       [
-        { month: '2026-10-01', total_co2e_kg: 20 },
-        { month: '2026-11-01', total_co2e_kg: 15 },
+        { month: '2026-09-01', total_co2e_kg: 20 },
+        { month: '2026-10-01', total_co2e_kg: 15 },
+        { month: '2026-11-01', total_co2e_kg: 2 },
       ],
       today,
-      2,
+      3,
     )
-    expect(compareWithPreviousMonth(series)).toEqual({
-      currentKg: 15,
-      previousKg: 20,
+    expect(compareCompletedMonths(series)).toMatchObject({
+      month: { month: '2026-10-01', totalKg: 15 },
+      previous: { month: '2026-09-01', totalKg: 20 },
       deltaKg: -5,
       deltaRatio: -0.25,
     })
   })
 
-  it('has no ratio when the previous month is empty', () => {
-    const series = buildMonthSeries([{ month: '2026-11-01', total_co2e_kg: 15 }], today, 2)
-    expect(compareWithPreviousMonth(series)?.deltaRatio).toBeNull()
+  it('has no ratio when the month before is empty', () => {
+    const series = buildMonthSeries([{ month: '2026-10-01', total_co2e_kg: 15 }], today, 3)
+    expect(compareCompletedMonths(series)?.deltaRatio).toBeNull()
+  })
+
+  it('needs two complete months', () => {
+    expect(compareCompletedMonths(buildMonthSeries([], today, 2))).toBeNull()
   })
 })
 

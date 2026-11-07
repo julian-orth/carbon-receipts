@@ -89,18 +89,14 @@ export function GoalCard({ goal, currentKg }: { goal: MonthlyGoal | null; curren
 
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-2xl font-semibold tabular-nums">
-          {formatCo2e(currentKg)}{' '}
-          <span className="text-base font-normal text-muted-foreground">
-            von {formatCo2e(target)}
-          </span>
-        </p>
-        <p className="flex items-center gap-1 text-sm font-medium">
-          <Icon aria-hidden className="size-4" style={{ color: status.color }} />
-          {status.label}
-        </p>
+      <div>
+        <p className="text-2xl font-semibold tabular-nums">{formatCo2e(currentKg)}</p>
+        <p className="text-sm text-muted-foreground">von {formatCo2e(target)} in diesem Monat</p>
       </div>
+      <p className="flex items-center gap-1 text-sm font-medium">
+        <Icon aria-hidden className="size-4" style={{ color: status.color }} />
+        {status.label}
+      </p>
       <meter
         min={0}
         max={target}
@@ -115,7 +111,7 @@ export function GoalCard({ goal, currentKg }: { goal: MonthlyGoal | null; curren
       </meter>
       <p className="text-sm text-muted-foreground">
         {progress.remainingKg >= 0
-          ? `Noch ${formatCo2e(progress.remainingKg)} bis zum Ziel in diesem Monat.`
+          ? `Noch ${formatCo2e(progress.remainingKg)} bis zum Ziel.`
           : `${formatCo2e(-progress.remainingKg)} über dem Ziel.`}
       </p>
       <Button size="sm" variant="outline" onClick={() => setEditing(true)}>

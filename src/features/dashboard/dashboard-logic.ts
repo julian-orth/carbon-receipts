@@ -84,20 +84,25 @@ export function sumByGroup(rows: readonly GroupRow[], fromMonth: string): GroupT
 }
 
 export type MonthComparison = {
-  currentKg: number
-  previousKg: number
+  month: MonthPoint
+  previous: MonthPoint
   deltaKg: number
   deltaRatio: number | null
 }
 
-export function compareWithPreviousMonth(series: readonly MonthPoint[]): MonthComparison | null {
-  const current = series.at(-1)
-  const previous = series.at(-2)
-  if (!current || !previous) return null
-  const deltaKg = roundCo2e(current.totalKg - previous.totalKg)
+/**
+ * Compares the last *complete* month with the one before. Comparing the running
+ * month would always look like a big drop early in the month.
+ */
+export function compareCompletedMonths(series: readonly MonthPoint[]): MonthComparison | null {
+  const completed = series.filter((point) => !point.isCurrent)
+  const month = completed.at(-1)
+  const previous = completed.at(-2)
+  if (!month || !previous) return null
+  const deltaKg = roundCo2e(month.totalKg - previous.totalKg)
   return {
-    currentKg: current.totalKg,
-    previousKg: previous.totalKg,
+    month,
+    previous,
     deltaKg,
     deltaRatio: previous.totalKg > 0 ? deltaKg / previous.totalKg : null,
   }

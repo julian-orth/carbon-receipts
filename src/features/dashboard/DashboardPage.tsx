@@ -16,7 +16,7 @@ import { RangeFilter } from './components/RangeFilter'
 import { StatTile } from './components/StatTile'
 import {
   buildMonthSeries,
-  compareWithPreviousMonth,
+  compareCompletedMonths,
   lastMonths,
   type RangeMonths,
   sumByGroup,
@@ -94,9 +94,11 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   }
 
   const rangeTotal = series.reduce((sum, point) => sum + point.totalKg, 0)
-  const comparison = compareWithPreviousMonth(series)
+  const comparison = compareCompletedMonths(series)
+  const currentKg = series.at(-1)?.totalKg ?? 0
   const groupTotals = sumByGroup(groups.data ?? [], fromMonth)
   const alternatives = suggestAlternatives(hotspots.data ?? [], categories.data ?? [])
+  const topHotspots = (hotspots.data ?? []).slice(0, 5)
   const goalKg = goal.data ? Number(goal.data.target_co2e_kg) : null
 
   if (rangeTotal === 0 && (hotspots.data ?? []).length === 0) {
@@ -127,15 +129,15 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
       {header}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Dieser Monat (laufend)" value={formatCo2e(comparison?.currentKg ?? 0)} />
+        <StatTile label="Dieser Monat (laufend)" value={formatCo2e(currentKg)} />
         <StatTile
-          label="Vormonat"
-          value={formatCo2e(comparison?.previousKg ?? 0)}
+          label={comparison ? `Vormonat (${comparison.month.label})` : 'Vormonat'}
+          value={formatCo2e(comparison?.month.totalKg ?? 0)}
           detail={
             comparison && comparison.deltaRatio !== null ? (
               <span className="inline-flex items-center gap-1">
                 <DeltaIcon aria-hidden className="size-4" />
-                {percent.format(comparison.deltaRatio)} im laufenden Monat
+                {percent.format(comparison.deltaRatio)} ggü. {comparison.previous.label}
               </span>
             ) : null
           }
@@ -151,7 +153,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
           title="Monatsziel"
           description="Wie viel CO₂e willst du pro Monat höchstens verursachen?"
         >
-          <GoalCard goal={goal.data ?? null} currentKg={comparison?.currentKg ?? 0} />
+          <GoalCard goal={goal.data ?? null} currentKg={currentKg} />
         </DashboardCard>
       </div>
 
@@ -164,7 +166,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
           )}
         </DashboardCard>
         <DashboardCard title="Hotspots" description="Deine größten einzelnen Posten">
-          <HotspotList hotspots={hotspots.data ?? []} />
+          <HotspotList hotspots={topHotspots} />
         </DashboardCard>
         <DashboardCard title="Alternativen" description="Gleichwertiger Tausch mit weniger CO₂e">
           <AlternativesList suggestions={alternatives} />

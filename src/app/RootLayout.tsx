@@ -14,9 +14,9 @@ export function RootLayout() {
       <header className="border-b">
         <nav
           aria-label="Hauptnavigation"
-          className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3"
+          className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:gap-6"
         >
-          <Link to="/" className="font-semibold">
+          <Link to="/" className="font-semibold whitespace-nowrap">
             Carbon Receipts
           </Link>
           <MainNav />

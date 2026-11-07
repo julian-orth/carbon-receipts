@@ -42,6 +42,8 @@ export function MonthlyTrendChart({
       <div className="h-64" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
+            // Decorative for assistive tech: the table view below is the accessible version.
+            accessibilityLayer={false}
             data={series}
             margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
             barCategoryGap="30%"
