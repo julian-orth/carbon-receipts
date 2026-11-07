@@ -90,17 +90,19 @@ export function ReceiptUpload() {
           <Upload aria-hidden className="size-6 text-muted-foreground" />
         )}
         <span className="font-medium">
-          {upload.isPending ? 'Wird hochgeladen …' : 'Foto oder CSV auswählen'}
+          {upload.isPending ? 'Wird hochgeladen …' : 'Foto auswählen'}
         </span>
         <span id={hintId} className="text-sm text-muted-foreground">
-          oder hierher ziehen · JPG, PNG, WebP, HEIC oder CSV · max. 10 MB
+          oder hierher ziehen · JPG, PNG, WebP oder HEIC · max. 10 MB
         </span>
       </label>
 
       <div aria-live="polite" className="min-h-0">
         {upload.isSuccess && (
           <p className="text-sm text-muted-foreground">
-            „{upload.variables.file.name}“ wurde hochgeladen und wird gleich analysiert.
+            {upload.data.processingStarted
+              ? `„${upload.variables.file.name}“ wurde hochgeladen und wird analysiert.`
+              : `„${upload.variables.file.name}“ wurde hochgeladen. Die Analyse konnte nicht gestartet werden – starte sie in der Liste erneut.`}
           </p>
         )}
       </div>

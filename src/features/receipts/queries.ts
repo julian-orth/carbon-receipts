@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteReceipt, fetchReceipts, retryReceipt, uploadReceipt } from './api'
+import { deleteReceipt, fetchReceipts, retryReceipt, startProcessing, uploadReceipt } from './api'
 import { receiptKeys } from './query-keys'
 
 export function useReceipts() {
@@ -26,6 +26,14 @@ export function useRetryReceipt() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: retryReceipt,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: receiptKeys.list() }),
+  })
+}
+
+export function useStartProcessing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: startProcessing,
     onSettled: () => queryClient.invalidateQueries({ queryKey: receiptKeys.list() }),
   })
 }

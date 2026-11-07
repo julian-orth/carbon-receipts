@@ -5,7 +5,7 @@ import { formatFileSize } from '@/lib/format'
 export const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 type UploadKind = {
-  sourceType: Extract<Enums<'receipt_source'>, 'photo' | 'csv'>
+  sourceType: Extract<Enums<'receipt_source'>, 'photo'>
   contentType: string
   extension: string
 }
@@ -17,7 +17,6 @@ const BY_EXTENSION: Record<string, UploadKind> = {
   webp: { sourceType: 'photo', contentType: 'image/webp', extension: 'webp' },
   heic: { sourceType: 'photo', contentType: 'image/heic', extension: 'heic' },
   heif: { sourceType: 'photo', contentType: 'image/heic', extension: 'heic' },
-  csv: { sourceType: 'csv', contentType: 'text/csv', extension: 'csv' },
 }
 
 const BY_MIME: Record<string, UploadKind | undefined> = {
@@ -26,10 +25,9 @@ const BY_MIME: Record<string, UploadKind | undefined> = {
   'image/webp': BY_EXTENSION.webp,
   'image/heic': BY_EXTENSION.heic,
   'image/heif': BY_EXTENSION.heic,
-  'text/csv': BY_EXTENSION.csv,
 }
 
-/** Value for `<input accept>`; extensions cover browsers that report no MIME type (HEIC, CSV). */
+/** Value for `<input accept>`; extensions cover browsers that report no MIME type (HEIC). */
 export const ACCEPT_ATTRIBUTE = [
   ...Object.keys(BY_MIME),
   ...Object.keys(BY_EXTENSION).map((ext) => `.${ext}`),
@@ -44,8 +42,7 @@ function extensionOf(name: string): string {
 
 /**
  * Decides how a file is stored and processed. The MIME type wins when it is known;
- * the extension is the fallback because browsers report CSV as `application/vnd.ms-excel`
- * or `''` and HEIC often as `''`.
+ * the extension is the fallback because browsers often report HEIC as `''`.
  */
 export function validateReceiptFile(
   file: Pick<File, 'name' | 'type' | 'size'>,
@@ -56,7 +53,7 @@ export function validateReceiptFile(
     return {
       ok: false,
       error:
-        'Dieser Dateityp wird nicht unterstützt. Erlaubt sind Fotos (JPG, PNG, WebP, HEIC) und CSV-Dateien.',
+        'Dieser Dateityp wird nicht unterstützt. Erlaubt sind Fotos im Format JPG, PNG, WebP oder HEIC.',
     }
   }
   if (file.size === 0) {

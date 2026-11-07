@@ -72,13 +72,16 @@ describe('ReceiptsPage', () => {
 
   it('uploads a valid file and confirms it', async () => {
     mockedApi.fetchReceipts.mockResolvedValue([])
-    mockedApi.uploadReceipt.mockResolvedValue(receiptFixture())
+    mockedApi.uploadReceipt.mockResolvedValue({
+      receipt: receiptFixture(),
+      processingStarted: true,
+    })
     const user = userEvent.setup()
     renderPage()
     await screen.findByText('Noch keine Belege')
 
     const file = jpeg()
-    await user.upload(screen.getByLabelText(/Foto oder CSV auswählen/), file)
+    await user.upload(screen.getByLabelText(/Foto auswählen/), file)
 
     await waitFor(() =>
       expect(mockedApi.uploadReceipt).toHaveBeenCalledWith(
@@ -86,7 +89,9 @@ describe('ReceiptsPage', () => {
         expect.anything(),
       ),
     )
-    expect(await screen.findByText(/„rewe.jpg“ wurde hochgeladen/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/„rewe.jpg“ wurde hochgeladen und wird analysiert/),
+    ).toBeInTheDocument()
     expect(mockedApi.fetchReceipts).toHaveBeenCalledTimes(2) // list refetched
   })
 
@@ -97,7 +102,7 @@ describe('ReceiptsPage', () => {
     await screen.findByText('Noch keine Belege')
 
     await user.upload(
-      screen.getByLabelText(/Foto oder CSV auswählen/),
+      screen.getByLabelText(/Foto auswählen/),
       new File(['%PDF'], 'bon.pdf', { type: 'application/pdf' }),
     )
 
@@ -112,7 +117,7 @@ describe('ReceiptsPage', () => {
     renderPage()
     await screen.findByText('Noch keine Belege')
 
-    await user.upload(screen.getByLabelText(/Foto oder CSV auswählen/), jpeg())
+    await user.upload(screen.getByLabelText(/Foto auswählen/), jpeg())
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Upload ist fehlgeschlagen/)
   })
@@ -148,5 +153,46 @@ describe('ReceiptsPage', () => {
       within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }),
     )
     expect(mockedApi.deleteReceipt).toHaveBeenCalledWith(receipt, expect.anything())
+  })
+
+  it('offers to start the analysis for pending receipts', async () => {
+    const pending = receiptFixture({ status: 'pending' })
+    mockedApi.fetchReceipts.mockResolvedValue([pending])
+    mockedApi.startProcessing.mockResolvedValue()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Analyse starten' }))
+    expect(mockedApi.startProcessing).toHaveBeenCalledWith(pending.id, expect.anything())
+  })
+
+  it('links receipts in review to the review screen', async () => {
+    const review = receiptFixture({ status: 'review', merchant: 'Edeka' })
+    mockedApi.fetchReceipts.mockResolvedValue([review])
+    renderPage()
+
+    expect(await screen.findByRole('link', { name: 'Prüfen' })).toHaveAttribute(
+      'href',
+      `/receipts/${review.id}`,
+    )
+    expect(screen.getByRole('link', { name: 'Edeka' })).toHaveAttribute(
+      'href',
+      `/receipts/${review.id}`,
+    )
+  })
+
+  it('tells the user when the analysis could not be started', async () => {
+    mockedApi.fetchReceipts.mockResolvedValue([])
+    mockedApi.uploadReceipt.mockResolvedValue({
+      receipt: receiptFixture(),
+      processingStarted: false,
+    })
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Noch keine Belege')
+
+    await user.upload(screen.getByLabelText(/Foto auswählen/), jpeg())
+
+    expect(await screen.findByText(/Analyse konnte nicht gestartet werden/)).toBeInTheDocument()
   })
 })

@@ -8,8 +8,7 @@ export function HomePage() {
         Carbon Receipts
       </h1>
       <p className="max-w-prose text-muted-foreground">
-        Lade Kassenbons oder Kontoauszüge hoch und sieh, welchen CO₂-Fußabdruck deine Einkäufe
-        haben.
+        Fotografiere deine Kassenbons und sieh, welchen CO₂-Fußabdruck deine Einkäufe haben.
       </p>
       <Button asChild>
         <Link to="/receipts">Belege hochladen</Link>

@@ -17,7 +17,7 @@ values ('aaaaaaaa-0000-0000-0000-000000000001', 'test-beef', 'Test-Rind', 'kg', 
 insert into public.receipts (id, user_id, source_type, status)
 values
   ('bbbbbbbb-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'photo', 'review'),
-  ('bbbbbbbb-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'csv', 'done');
+  ('bbbbbbbb-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'photo', 'done');
 
 insert into public.line_items (receipt_id, user_id, raw_text, co2e_kg, category_id)
 values
@@ -52,19 +52,19 @@ select is((select count(*) from public.category_mappings)::int, 1, 'Alice sees g
 select ok((select count(*) from public.emission_categories) > 1, 'emission categories are readable');
 
 select lives_ok(
-  $$ insert into public.receipts (source_type) values ('csv') $$,
+  $$ insert into public.receipts (source_type) values ('photo') $$,
   'Alice can create a receipt (user_id defaults to auth.uid())'
 );
 
 select throws_ok(
-  $$ insert into public.receipts (source_type, status) values ('csv', 'done') $$,
+  $$ insert into public.receipts (source_type, status) values ('photo', 'done') $$,
   '42501', null,
   'Alice cannot set the status on insert'
 );
 
 select throws_ok(
   $$ insert into public.receipts (user_id, source_type)
-     values ('22222222-2222-2222-2222-222222222222', 'csv') $$,
+     values ('22222222-2222-2222-2222-222222222222', 'photo') $$,
   '42501', null,
   'Alice cannot set user_id explicitly'
 );

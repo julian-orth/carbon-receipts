@@ -1,9 +1,10 @@
-import { FileSpreadsheet, ImageIcon, Receipt as ReceiptIcon, RotateCcw } from 'lucide-react'
+import { ImageIcon, Play, Receipt as ReceiptIcon, RotateCcw } from 'lucide-react'
+import { Link } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, formatDateTime } from '@/lib/format'
-import { useReceipts, useRetryReceipt } from '../queries'
+import { useReceipts, useRetryReceipt, useStartProcessing } from '../queries'
 import type { Receipt } from '../types'
 import { DeleteReceiptButton } from './DeleteReceiptButton'
 import { ReceiptStatusBadge } from './ReceiptStatusBadge'
@@ -45,7 +46,7 @@ export function ReceiptList() {
         <ReceiptIcon aria-hidden className="size-8 text-muted-foreground" />
         <p className="font-medium">Noch keine Belege</p>
         <p className="text-sm text-muted-foreground">
-          Lade oben deinen ersten Kassenbon oder Kontoauszug hoch.
+          Lade oben ein Foto deines ersten Kassenbons hoch.
         </p>
       </div>
     )
@@ -62,14 +63,25 @@ export function ReceiptList() {
 
 function ReceiptListItem({ receipt }: { receipt: Receipt }) {
   const retry = useRetryReceipt()
+  const start = useStartProcessing()
   const label = receiptLabel(receipt)
-  const SourceIcon = receipt.source_type === 'csv' ? FileSpreadsheet : ImageIcon
 
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-      <SourceIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+      <ImageIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{label}</p>
+        <p className="truncate font-medium">
+          {receipt.status === 'review' || receipt.status === 'done' ? (
+            <Link
+              to={`/receipts/${receipt.id}`}
+              className="underline-offset-4 hover:underline focus-visible:underline"
+            >
+              {label}
+            </Link>
+          ) : (
+            label
+          )}
+        </p>
         <p className="text-sm text-muted-foreground">
           {receipt.purchased_at ? (
             <>Einkauf am {formatDate(receipt.purchased_at)}</>
@@ -86,6 +98,22 @@ function ReceiptListItem({ receipt }: { receipt: Receipt }) {
       </div>
       <ReceiptStatusBadge status={receipt.status} />
       <div className="flex items-center gap-1">
+        {receipt.status === 'review' && (
+          <Button asChild size="sm">
+            <Link to={`/receipts/${receipt.id}`}>Prüfen</Link>
+          </Button>
+        )}
+        {receipt.status === 'pending' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => start.mutate(receipt.id)}
+            disabled={start.isPending}
+          >
+            <Play aria-hidden />
+            Analyse starten
+          </Button>
+        )}
         {receipt.status === 'failed' && (
           <Button
             variant="outline"

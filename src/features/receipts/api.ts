@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { validateReceiptFile } from './file-validation'
 import type { Receipt } from './types'
@@ -11,6 +12,19 @@ export async function fetchReceipts(): Promise<Receipt[]> {
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
+}
+
+/**
+ * Asks the edge function to analyse a pending receipt. A 409 means another call
+ * already claimed it – that is fine, the UI follows the status via Realtime.
+ */
+export async function startProcessing(receiptId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('process-receipt', {
+    body: { receipt_id: receiptId },
+  })
+  if (!error) return
+  if (error instanceof FunctionsHttpError && (error.context as Response).status === 409) return
+  throw error
 }
 
 /**
@@ -38,7 +52,17 @@ export async function uploadReceipt({ file, userId }: { file: File; userId: stri
     await supabase.storage.from(RECEIPTS_BUCKET).remove([path])
     throw error
   }
-  return data
+
+  // The receipt exists now; if starting the analysis fails, it stays `pending`
+  // and can be started again from the list.
+  const processingStarted = await startProcessing(data.id).then(
+    () => true,
+    (startError: unknown) => {
+      console.warn('Could not start processing', startError)
+      return false
+    },
+  )
+  return { receipt: data, processingStarted }
 }
 
 /** Deletes the row (line items cascade), then the file. A leftover file is only logged. */
@@ -52,8 +76,9 @@ export async function deleteReceipt(receipt: Pick<Receipt, 'id' | 'file_path'>) 
   }
 }
 
-/** `failed → pending`; the database trigger clears `error` and rejects other transitions. */
+/** `failed → pending` (the trigger clears `error`), then start the analysis again. */
 export async function retryReceipt(id: string) {
   const { error } = await supabase.from('receipts').update({ status: 'pending' }).eq('id', id)
   if (error) throw error
+  await startProcessing(id)
 }

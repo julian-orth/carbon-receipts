@@ -9,9 +9,6 @@ describe('validateReceiptFile', () => {
     ['bon.JPEG', '', 'photo', 'image/jpeg', 'jpg'],
     ['bon.png', 'image/png', 'photo', 'image/png', 'png'],
     ['bon.heic', '', 'photo', 'image/heic', 'heic'],
-    ['konto.csv', 'text/csv', 'csv', 'text/csv', 'csv'],
-    ['konto.csv', 'application/vnd.ms-excel', 'csv', 'text/csv', 'csv'],
-    ['konto.csv', '', 'csv', 'text/csv', 'csv'],
   ])('accepts %s (%s)', (name, type, sourceType, contentType, extension) => {
     expect(validateReceiptFile(file(name, type))).toEqual({
       ok: true,
@@ -21,6 +18,7 @@ describe('validateReceiptFile', () => {
 
   it.each([
     ['bon.pdf', 'application/pdf'],
+    ['konto.csv', 'text/csv'],
     ['bon.gif', 'image/gif'],
     ['noextension', ''],
     ['script.js', 'text/javascript'],
