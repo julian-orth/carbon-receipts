@@ -7,12 +7,15 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@shared': fileURLToPath(new URL('./supabase/functions/_shared', import.meta.url)),
+    },
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
     css: false,
     // Dummy values so `src/lib/env.ts` validates; network calls are mocked in tests.
     env: {
@@ -21,7 +24,7 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
+      include: ['src/**/*.{ts,tsx}', 'supabase/functions/_shared/**/*.ts'],
       exclude: ['src/components/ui/**', 'src/types/**', 'src/test/**', 'src/main.tsx'],
     },
   },

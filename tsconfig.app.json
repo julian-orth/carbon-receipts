@@ -17,7 +17,7 @@
     "jsx": "react-jsx",
 
     /* Paths */
-    "paths": { "@/*": ["./src/*"] },
+    "paths": { "@/*": ["./src/*"], "@shared/*": ["./supabase/functions/_shared/*"] },
 
     /* Linting */
     "strict": true,
@@ -28,5 +28,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "supabase/functions/_shared"]
 }

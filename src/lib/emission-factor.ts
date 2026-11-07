@@ -1,5 +1,5 @@
 import type { Tables } from '@/types/db-helpers'
-import type { EmissionFactor } from './emissions/types.ts'
+import type { EmissionFactor } from '@shared/emissions/types.ts'
 
 /** Adapter: DB row → pure domain type used by `calculateCo2e`. */
 export function toEmissionFactor(
