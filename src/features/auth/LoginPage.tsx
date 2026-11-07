@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from './auth-context'
 import { getAuthErrorMessage } from './errors'
-import { useSendMagicLink } from './mutations'
+import { demoCredentials, useDemoSignIn, useSendMagicLink } from './mutations'
 import { consumeRedirect, rememberRedirect, sanitizeRedirect } from './redirect'
 import type { LoginLocationState } from './RequireAuth'
 
@@ -29,6 +29,7 @@ export function LoginPage() {
   const from = sanitizeRedirect((location.state as LoginLocationState | null)?.from)
 
   const sendMagicLink = useSendMagicLink()
+  const demoSignIn = useDemoSignIn()
   const emailId = useId()
   const emailErrorId = useId()
   const successHeadingRef = useRef<HTMLHeadingElement>(null)
@@ -133,6 +134,32 @@ export function LoginPage() {
                   {sendMagicLink.isPending ? 'Wird gesendet …' : 'Login-Link senden'}
                 </Button>
               </form>
+
+              {demoCredentials && (
+                <div className="mt-6 space-y-2 border-t pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={demoSignIn.isPending}
+                    onClick={() => {
+                      rememberRedirect(from)
+                      demoSignIn.mutate()
+                    }}
+                  >
+                    {demoSignIn.isPending && <Spinner />}
+                    Demo ansehen
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Mit Beispieldaten, ohne Anmeldung. Die Demo wird regelmäßig zurückgesetzt.
+                  </p>
+                  {demoSignIn.isError && (
+                    <p role="alert" className="text-center text-sm text-destructive">
+                      {getAuthErrorMessage(demoSignIn.error)}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </>
         )}

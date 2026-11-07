@@ -11,6 +11,7 @@ vi.mock('@/features/dashboard/api')
 vi.mock('@/features/categories-api')
 
 const signInWithOtp = vi.spyOn(supabase.auth, 'signInWithOtp')
+const signInWithPassword = vi.spyOn(supabase.auth, 'signInWithPassword')
 
 function renderLogin(from?: string) {
   return renderRoutes(routes, {
@@ -76,5 +77,18 @@ describe('LoginPage', () => {
   it('redirects signed-in users away from the login page', async () => {
     const { router } = renderRoutes(routes, { initialPath: '/login', auth: authenticated })
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+  })
+
+  it('signs in to the demo account', async () => {
+    signInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: null,
+    } as never)
+    const user = userEvent.setup()
+    renderLogin()
+
+    await user.click(screen.getByRole('button', { name: 'Demo ansehen' }))
+
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: 'demo@example.com', password: 'demo' })
   })
 })

@@ -18,7 +18,10 @@ export default defineConfig({
         // Long-lived vendor chunks: app deploys don't invalidate them.
         advancedChunks: {
           groups: [
-            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/ },
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/,
+            },
             { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
             { name: 'charts', test: /node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor)[\\/]/ },
           ],
@@ -35,6 +38,8 @@ export default defineConfig({
     env: {
       VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
       VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+      VITE_DEMO_EMAIL: 'demo@example.com',
+      VITE_DEMO_PASSWORD: 'demo',
     },
     coverage: {
       provider: 'v8',
