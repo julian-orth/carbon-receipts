@@ -135,7 +135,7 @@ export function ReviewPage() {
       {data.status === 'review' && (
         <section
           aria-label="Beleg bestätigen"
-          className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur"
+          className="-mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur lg:sticky lg:bottom-0"
         >
           <p className="text-sm text-muted-foreground">
             {withoutCo2e > 0

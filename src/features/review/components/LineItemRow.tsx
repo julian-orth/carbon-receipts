@@ -191,8 +191,9 @@ export function LineItemRow({
           </p>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm" aria-live="polite">
+        {/* Preview and actions on separate rows: the preview changes while typing and must not move the button. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm sm:min-w-0 sm:flex-1" aria-live="polite">
             {preview.ok ? (
               <>
                 <span className="font-semibold">{formatCo2e(preview.co2eKg)}</span>
@@ -218,7 +219,7 @@ export function LineItemRow({
               <span className="text-muted-foreground">Kein CO₂-Wert: {preview.message}</span>
             )}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {save.isError && (
               <span role="alert" className="text-sm text-destructive">
                 Speichern fehlgeschlagen
