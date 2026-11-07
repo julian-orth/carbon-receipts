@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router'
+import { UserMenu } from '@/features/auth/UserMenu'
 
 export function RootLayout() {
   return (
@@ -17,6 +18,7 @@ export function RootLayout() {
           <Link to="/" className="font-semibold">
             Carbon Receipts
           </Link>
+          <UserMenu />
         </nav>
       </header>
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">

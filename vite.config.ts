@@ -14,6 +14,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    // Dummy values so `src/lib/env.ts` validates; network calls are mocked in tests.
+    env: {
+      VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
