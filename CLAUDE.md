@@ -17,5 +17,7 @@ Decisions log: `docs/decisions.md` — add a short entry for every non-obvious c
 - Every data-driven component handles loading, empty and error states.
 - Accessibility: semantic HTML, keyboard operable, visible focus.
 - Every new table: RLS on, explicit minimal grants (nothing is granted by default), pgTAP coverage in `supabase/tests/database/`.
-- Linting is oxlint (not ESLint, see decision 002). Imports use the `@/` alias.
+- Linting is oxlint (not ESLint, see decision 002). Imports use the `@/` alias. oxlint override globs need a `**/` prefix (`**/src/...`), otherwise they silently don't match.
+- `src/lib/emissions/` stays dependency-free with `.ts` import extensions (shared with the Deno edge function).
+- Reference data needed in production goes into migrations, not `seed.sql`.
 - Conventional Commits, small and focused.

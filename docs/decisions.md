@@ -78,3 +78,43 @@ logged; an orphaned row pointing to a missing file would be worse.
 File type detection prefers the MIME type and falls back to the extension, because browsers report
 CSV as `application/vnd.ms-excel` or `''` and HEIC often as `''`. PDFs are accepted by the bucket
 but not offered in the UI yet (not in MVP scope).
+
+## 011 – Emission factors: ifeu 2020 for food, BAFU 2026 for fuel, seeded by migration
+
+Food factors come from ifeu (2020), _Ökologische Fußabdrücke von Lebensmitteln und Gerichten in
+Deutschland_ – CO₂ footprints "at the supermarket checkout" in Germany, reference year 2019. It is
+German, covers ~200 products and is published by the UBA's contractor; global averages such as
+Poore & Nemecek (2018) are much higher for animal products (e.g. beef 99 vs. 13.6 kg CO₂e/kg)
+because they reflect global production mixes. Every row stores the exact table and line number
+(`source`) and the PDF URL (`source_url`), so each result can be traced back to a single number.
+
+Fuel factors come from the BAFU fact sheet (January 2026): 2.32 kg CO₂/l petrol, 2.62 kg CO₂/l
+diesel.
+
+**Trade-offs / known limitations**
+
+- System boundaries differ: food values are life-cycle values, fuel values cover combustion only
+  (no upstream emissions, which would add roughly a quarter).
+- Beverages and milk are reported per kg and stored per litre (density ≈ 1).
+- Eggs are stored per piece, derived as 3.0 kg CO₂e/kg × 60 g per egg (assumption).
+- Some categories use a reference product (e.g. frozen vegetables → frozen broccoli).
+- Spend-based factors (CO₂e per EUR) for bank CSV exports are **not** seeded yet; a source still
+  has to be chosen.
+
+The factors are seeded in a migration (idempotent `on conflict (slug) do update`), not in
+`seed.sql`: they are reference data needed in every environment, and `supabase db push` does not
+run the seed file.
+
+## 012 – One pure calculation module, shared with the edge function
+
+`src/lib/emissions/` contains the only CO₂e formula (`calculateCo2e`), unit normalization,
+product-name normalization for `category_mappings` and rounding. It has no dependencies and uses
+`.ts` import extensions, so the Deno edge function can import the same files; an oxlint override
+blocks any import from outside the folder.
+
+- Results are a discriminated union: missing quantity, missing price or a unit mismatch (e.g.
+  pieces vs. kg) fail explicitly, so the item is sent to the review screen instead of getting a
+  guessed number. kg ↔ l is accepted and flagged as `density_1`.
+- Rounding to the DB precision (4 decimals) shifts via the decimal exponent, because
+  `Math.round(x * 1e4)` rounds 12.34565 down (binary 12.3456499…).
+- A type-level test asserts that the domain `EmissionUnit` equals the generated DB enum.
