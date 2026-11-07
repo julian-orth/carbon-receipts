@@ -40,7 +40,7 @@
       }
     },
     {
-      "files": ["**/src/lib/emissions/**"],
+      "files": ["**/supabase/functions/_shared/emissions/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -48,13 +48,19 @@
             "patterns": [
               {
                 "group": ["@/**", "../**", "react", "react/**", "@supabase/**", "zod"],
-                "message": "src/lib/emissions must stay dependency-free so the edge function (Deno) can reuse it."
+                "message": "The emissions module must stay dependency-free (shared by the app and the Deno edge function)."
               }
             ]
           }
         ]
       }
+    },
+    {
+      "files": ["**/supabase/functions/*/index.ts"],
+      "rules": {
+        "no-console": "off"
+      }
     }
   ],
-  "ignorePatterns": ["dist", "coverage", "src/types/database.ts", "supabase/functions/**"]
+  "ignorePatterns": ["dist", "coverage", "supabase/functions/_shared/database.types.ts"]
 }

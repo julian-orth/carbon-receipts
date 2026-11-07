@@ -69,5 +69,20 @@ jobs:
       - name: Generated types are up to date
         run: |
           npm run db:types
-          git diff --exit-code -- src/types/database.ts \
-            || (echo "::error::src/types/database.ts is stale. Run 'npm run db:types' and commit." && exit 1)
+          git diff --exit-code -- supabase/functions/_shared/database.types.ts \
+            || (echo "::error::supabase/functions/_shared/database.types.ts is stale. Run 'npm run db:types' and commit." && exit 1)
+
+  edge-functions:
+    name: Edge functions (Deno typecheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck process-receipt
+        working-directory: supabase/functions/process-receipt
+        run: deno check index.ts

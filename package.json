@@ -19,7 +19,9 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:types": "supabase gen types typescript --local --schema public > src/types/database.ts && prettier --write src/types/database.ts"
+    "db:types": "supabase gen types typescript --local --schema public < /dev/null > supabase/functions/_shared/database.types.ts && prettier --write supabase/functions/_shared/database.types.ts",
+    "functions:check": "cd supabase/functions/process-receipt && npx --yes deno@2 check index.ts",
+    "functions:serve": "supabase functions serve --env-file supabase/functions/.env"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

@@ -412,3 +412,8 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# The function validates the user JWT itself (auth.getUser), which works with both
+# legacy and asymmetric signing keys.
+[functions.process-receipt]
+verify_jwt = false
