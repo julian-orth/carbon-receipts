@@ -47,3 +47,16 @@ else's receipt.
 
 `supabase/tests/database` checks RLS, grants and status transitions per role. CI runs them against
 a fresh database and also fails when `src/types/database.ts` is out of date with the migrations.
+
+## 008 – Magic link with PKCE; session in context, not in TanStack Query
+
+The magic link uses the PKCE flow: the link returns a one-time `?code=` that supabase-js exchanges
+itself, so no tokens appear in the URL or browser history. Trade-off: the link must be opened in the
+browser where it was requested; the callback page explains this.
+
+The session is client state owned by supabase-js (`onAuthStateChange`), so it lives in a small
+context instead of TanStack Query. On sign-out the query cache is cleared so no data of the previous
+user remains.
+
+The "return to" path survives the round trip through the mail client in `localStorage` and is
+sanitized to same-origin paths (no open redirect).
