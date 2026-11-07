@@ -1,9 +1,11 @@
-import { screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '@/app/routes'
 import { authenticated, loading, unauthenticated } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
 import { rememberRedirect } from './redirect'
+
+vi.mock('@/features/receipts/api')
 
 function setBrowserUrl(url: string) {
   window.history.replaceState(null, '', url)
@@ -21,10 +23,10 @@ describe('AuthCallbackPage', () => {
     expect(screen.getByRole('status', { name: 'Anmeldung wird abgeschlossen' })).toBeInTheDocument()
   })
 
-  it('redirects to the remembered page once signed in', () => {
+  it('redirects to the remembered page once signed in', async () => {
     rememberRedirect('/receipts')
     const { router } = renderRoutes(routes, { initialPath: '/auth/callback', auth: authenticated })
-    expect(router.state.location.pathname).toBe('/receipts')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/receipts'))
   })
 
   it('explains expired links', () => {

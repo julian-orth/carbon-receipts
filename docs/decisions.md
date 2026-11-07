@@ -164,3 +164,21 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
 - "Beleg bestätigen" marks all items as reviewed and moves the receipt `review → done` – the only
   transition besides retry that the database allows for users. Only `done` receipts count in the
   dashboard.
+
+## 016 – Dashboard: SQL views, one hue, traceable alternatives
+
+- Aggregation happens in `security_invoker` views (`line_item_emissions`, `monthly_totals`,
+  `monthly_emissions`), so RLS applies and the client only fetches small result sets. Only `done`
+  receipts count; the effective date is the purchase date, falling back to the upload date.
+- Charts follow a data-viz checklist: both charts show magnitude, so they use **one sequential hue**
+  (validated reference palette) and carry identity in labels, not colour. The running month is
+  drawn lighter because it is incomplete. Every chart has a tooltip and a table view; the goal
+  status uses icon + text, never colour alone. No dual axes.
+- Alternatives are like-for-like swaps in the same unit (e.g. ground beef → soy patties, milk →
+  oat drink). Savings are computed from the same factors and cite their ifeu table row; products
+  without an own category (e.g. tap water, soy yoghurt) carry their ifeu factor inline.
+- The monthly goal is saved with update-or-insert because users may only update
+  `target_co2e_kg`; an upsert would also write `period`.
+- Feature pages are lazy routes; Recharts, React and Supabase are separate vendor chunks
+  (entry chunk 1.2 MB → 199 kB). A route error boundary asks for a reload when a chunk is gone
+  after a deploy.

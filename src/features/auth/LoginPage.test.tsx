@@ -1,11 +1,14 @@
 import { AuthApiError } from '@supabase/supabase-js'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '@/app/routes'
 import { supabase } from '@/lib/supabase'
 import { authenticated } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
+
+vi.mock('@/features/dashboard/api')
+vi.mock('@/features/categories-api')
 
 const signInWithOtp = vi.spyOn(supabase.auth, 'signInWithOtp')
 
@@ -70,8 +73,8 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Zu viele Anfragen/)
   })
 
-  it('redirects signed-in users away from the login page', () => {
+  it('redirects signed-in users away from the login page', async () => {
     const { router } = renderRoutes(routes, { initialPath: '/login', auth: authenticated })
-    expect(router.state.location.pathname).toBe('/')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 })

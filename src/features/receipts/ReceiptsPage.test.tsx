@@ -43,7 +43,7 @@ describe('ReceiptsPage', () => {
     ])
     renderPage()
 
-    expect(screen.getByRole('status', { name: 'Belege werden geladen' })).toBeInTheDocument()
+    expect(await screen.findByRole('status', { name: 'Belege werden geladen' })).toBeInTheDocument()
 
     const list = await screen.findByRole('list', { name: 'Deine Belege' })
     const items = within(list).getAllByRole('listitem')

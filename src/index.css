@@ -49,6 +49,14 @@
 }
 
 :root {
+  /* Data viz (validated reference palette): one sequential hue, recessive axes */
+  --viz-series-1: #2a78d6;
+  --viz-series-1-muted: #86b6ef;
+  --viz-goal: #52514e;
+  --viz-grid: #e6e5e1;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +92,10 @@
 }
 
 .dark {
+  --viz-series-1: #3987e5;
+  --viz-series-1-muted: #184f95;
+  --viz-goal: #c3c2b7;
+  --viz-grid: #383835;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
