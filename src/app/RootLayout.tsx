@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router'
 import { UserMenu } from '@/features/auth/UserMenu'
+import { MainNav } from './MainNav'
 
 export function RootLayout() {
   return (
@@ -18,6 +19,7 @@ export function RootLayout() {
           <Link to="/" className="font-semibold">
             Carbon Receipts
           </Link>
+          <MainNav />
           <UserMenu />
         </nav>
       </header>

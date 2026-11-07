@@ -1,3 +1,6 @@
+import { Link } from 'react-router'
+import { Button } from '@/components/ui/button'
+
 export function HomePage() {
   return (
     <section aria-labelledby="home-title" className="space-y-3">
@@ -8,6 +11,9 @@ export function HomePage() {
         Lade Kassenbons oder Kontoauszüge hoch und sieh, welchen CO₂-Fußabdruck deine Einkäufe
         haben.
       </p>
+      <Button asChild>
+        <Link to="/receipts">Belege hochladen</Link>
+      </Button>
     </section>
   )
 }

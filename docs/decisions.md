@@ -60,3 +60,21 @@ user remains.
 
 The "return to" path survives the round trip through the mail client in `localStorage` and is
 sanitized to same-origin paths (no open redirect).
+
+## 009 – Realtime patches the query cache instead of refetching
+
+Status changes from the processing pipeline arrive via Supabase Realtime (`postgres_changes`,
+filtered by `user_id`, RLS still applies). Each event is merged into the TanStack Query cache by a
+pure, unit-tested function (`applyReceiptChange`), so the list updates without a network round trip.
+After every (re)subscribe the list is refetched once, so events missed while offline are not lost.
+
+## 010 – Upload: file first, then row; cleanup on failure
+
+The file is uploaded to `<user_id>/<uuid>.<ext>` (storage policies check the first folder), then the
+`receipts` row is inserted with status `pending`. If the insert fails, the file is removed again.
+Deleting goes the other way: row first (line items cascade), then the file. A leftover file is only
+logged; an orphaned row pointing to a missing file would be worse.
+
+File type detection prefers the MIME type and falls back to the extension, because browsers report
+CSV as `application/vnd.ms-excel` or `''` and HEIC often as `''`. PDFs are accepted by the bucket
+but not offered in the UI yet (not in MVP scope).
