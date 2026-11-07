@@ -54,6 +54,7 @@ export type Database = {
       }
       emission_categories: {
         Row: {
+          category_group: string
           co2e_per_unit: number
           created_at: string
           id: string
@@ -64,6 +65,7 @@ export type Database = {
           unit: Database['public']['Enums']['emission_unit']
         }
         Insert: {
+          category_group?: string
           co2e_per_unit: number
           created_at?: string
           id?: string
@@ -74,6 +76,7 @@ export type Database = {
           unit: Database['public']['Enums']['emission_unit']
         }
         Update: {
+          category_group?: string
           co2e_per_unit?: number
           created_at?: string
           id?: string

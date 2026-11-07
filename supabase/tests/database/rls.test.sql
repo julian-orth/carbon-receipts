@@ -12,7 +12,7 @@ values
   ('22222222-2222-2222-2222-222222222222', 'bob@example.com', '{}');
 
 insert into public.emission_categories (id, slug, label, unit, co2e_per_unit, source)
-values ('aaaaaaaa-0000-0000-0000-000000000001', 'beef', 'Rindfleisch', 'kg', 27.0, 'test');
+values ('aaaaaaaa-0000-0000-0000-000000000001', 'test-beef', 'Test-Rind', 'kg', 27.0, 'test');
 
 insert into public.receipts (id, user_id, source_type, status)
 values
@@ -49,7 +49,7 @@ select is((select count(*) from public.line_items)::int, 0, 'Alice cannot see Bo
 select is((select count(*) from public.monthly_emissions)::int, 0, 'Alice cannot see Bob''s emissions');
 select is((select count(*) from public.profiles)::int, 1, 'Alice only sees her own profile');
 select is((select count(*) from public.category_mappings)::int, 1, 'Alice sees global but not Bob''s mappings');
-select is((select count(*) from public.emission_categories)::int, 1, 'emission categories are readable');
+select ok((select count(*) from public.emission_categories) > 1, 'emission categories are readable');
 
 select lives_ok(
   $$ insert into public.receipts (source_type) values ('csv') $$,
