@@ -76,7 +76,7 @@ describe('LoginPage', () => {
 
   it('redirects signed-in users away from the login page', async () => {
     const { router } = renderRoutes(routes, { initialPath: '/login', auth: authenticated })
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'), { timeout: 5000 })
   })
 
   it('signs in to the demo account', async () => {

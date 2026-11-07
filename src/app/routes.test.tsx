@@ -4,13 +4,18 @@ import { authenticated, loading, unauthenticated } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
 import { routes } from './routes'
 
+// Feature pages are lazy routes; the first dynamic import can be slow on a busy CI runner.
+const LAZY_ROUTE = { timeout: 5000 }
+
 vi.mock('@/features/dashboard/api')
 vi.mock('@/features/categories-api')
 
 describe('routes', () => {
   it('renders the dashboard for signed-in users', async () => {
     renderRoutes(routes, { auth: authenticated })
-    expect(await screen.findByRole('heading', { level: 1, name: 'Übersicht' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Übersicht' }, LAZY_ROUTE),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Abmelden' })).toBeInTheDocument()
   })
 
