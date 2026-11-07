@@ -15,17 +15,16 @@ jobs:
     timeout-minutes: 2
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - name: Ping Supabase
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "::notice::SUPABASE_URL / SUPABASE_ANON_KEY not configured – skipping."
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::notice::SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY not configured – skipping."
             exit 0
           fi
           curl --fail --silent --show-error --max-time 30 \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/rest/v1/emission_categories?select=id&limit=1" \
             -o /dev/null
           echo "Supabase responded."

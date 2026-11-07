@@ -41,3 +41,33 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  database:
+    name: Database tests + type drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.111.0
+
+      - name: Start database
+        run: supabase db start
+
+      - name: RLS / privilege tests (pgTAP)
+        run: supabase test db
+
+      - name: Generated types are up to date
+        run: |
+          npm run db:types
+          git diff --exit-code -- src/types/database.ts \
+            || (echo "::error::src/types/database.ts is stale. Run 'npm run db:types' and commit." && exit 1)
