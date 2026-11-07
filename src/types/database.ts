@@ -224,6 +224,7 @@ export type Database = {
           file_path: string | null
           id: string
           merchant: string | null
+          original_filename: string | null
           purchased_at: string | null
           source_type: Database['public']['Enums']['receipt_source']
           status: Database['public']['Enums']['receipt_status']
@@ -236,6 +237,7 @@ export type Database = {
           file_path?: string | null
           id?: string
           merchant?: string | null
+          original_filename?: string | null
           purchased_at?: string | null
           source_type: Database['public']['Enums']['receipt_source']
           status?: Database['public']['Enums']['receipt_status']
@@ -248,6 +250,7 @@ export type Database = {
           file_path?: string | null
           id?: string
           merchant?: string | null
+          original_filename?: string | null
           purchased_at?: string | null
           source_type?: Database['public']['Enums']['receipt_source']
           status?: Database['public']['Enums']['receipt_status']
