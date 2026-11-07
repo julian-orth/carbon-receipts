@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(19);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (run as postgres, bypassing RLS)
@@ -98,6 +98,28 @@ select throws_ok(
      values (null, 'global', 'aaaaaaaa-0000-0000-0000-000000000001') $$,
   '42501', null,
   'Alice cannot create global mappings'
+);
+
+select lives_ok(
+  $$ insert into public.category_mappings (normalized_name, category_id)
+     values ('hafer drink', 'aaaaaaaa-0000-0000-0000-000000000001')
+     on conflict (user_id, normalized_name) do update
+       set normalized_name = excluded.normalized_name, category_id = excluded.category_id $$,
+  'Alice can upsert her own mapping (review correction)'
+);
+
+select lives_ok(
+  $$ insert into public.category_mappings (normalized_name, category_id)
+     values ('hafer drink', 'aaaaaaaa-0000-0000-0000-000000000001')
+     on conflict (user_id, normalized_name) do update
+       set normalized_name = excluded.normalized_name, category_id = excluded.category_id $$,
+  'upserting the same mapping again updates it'
+);
+
+select is(
+  (select count(*) from public.category_mappings where normalized_name = 'hafer drink')::int,
+  1,
+  'two upserts leave a single mapping'
 );
 
 -- ---------------------------------------------------------------------------
