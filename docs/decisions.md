@@ -107,10 +107,12 @@ run the seed file.
 
 ## 012 – One pure calculation module, shared with the edge function
 
-`src/lib/emissions/` contains the only CO₂e formula (`calculateCo2e`), unit normalization,
+`supabase/functions/_shared/emissions/` contains the only CO₂e formula (`calculateCo2e`), unit normalization,
 product-name normalization for `category_mappings` and rounding. It has no dependencies and uses
-`.ts` import extensions, so the Deno edge function can import the same files; an oxlint override
-blocks any import from outside the folder.
+`.ts` import extensions; the app imports it via the `@shared/*` alias and the Deno edge function
+imports the same files. It lives under `supabase/functions/` because the local edge runtime only
+mounts that folder. An oxlint override blocks any import from outside the module. The generated
+database types live there too (`_shared/database.types.ts`, re-exported by `src/types/database.ts`).
 
 - Results are a discriminated union: missing quantity, missing price or a unit mismatch (e.g.
   pieces vs. kg) fail explicitly, so the item is sent to the review screen instead of getting a
@@ -118,3 +120,33 @@ blocks any import from outside the folder.
 - Rounding to the DB precision (4 decimals) shifts via the decimal exponent, because
   `Math.round(x * 1e4)` rounds 12.34565 down (binary 12.3456499…).
 - A type-level test asserts that the domain `EmissionUnit` equals the generated DB enum.
+
+## 013 – MVP: photo receipts only
+
+CSV bank exports and PDFs are out of scope for now. Bank exports only contain totals per merchant
+("REWE 54,30 €"); they would need spend-based factors (kg CO₂e per EUR), and there is no open,
+ready-to-use table for Germany (EXIOBASE would have to be mapped to consumption categories
+first). The upload, the validation and the storage bucket accept images only; a check constraint
+enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf` for later.
+
+## 014 – Processing pipeline: client trigger, atomic claim, background work
+
+- After the upload the client calls the `process-receipt` edge function. The function validates the
+  JWT (`auth.getUser`, works with legacy and asymmetric keys – hence `verify_jwt = false`), then
+  claims the receipt with a single conditional update (`pending → processing`). A second call gets
+  409, so double clicks or retries cannot process a receipt twice.
+- It answers 202 immediately and continues with `EdgeRuntime.waitUntil`, so closing the tab does
+  not cancel the work. The UI follows the status via Realtime. If starting fails, the receipt stays
+  `pending` and the list offers "Analyse starten".
+- `LlmProvider` has a Gemini and a Groq implementation plus a deterministic mock (local
+  development, E2E tests, demo without keys). `generateWithFallback` retries 429/5xx with
+  exponential backoff and full jitter, then moves to the next provider. Output that fails Zod
+  validation also moves on to the next provider instead of being stored.
+- Model ids are configuration (`GEMINI_MODEL`, `GROQ_MODEL`), because free-tier model names
+  rotate.
+- Learned `category_mappings` (user before global) override the model's category and get
+  confidence 1. For photos the model is still needed to read the receipt, so "known names don't
+  go to the AI" applies to the categorisation, not to the extraction.
+- The daily quota is consumed atomically in Postgres (`consume_ai_quota`) right before the LLM
+  call; only `service_role` may execute it.
+- Re-processing replaces earlier line items, so a retry is idempotent.
