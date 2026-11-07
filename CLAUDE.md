@@ -6,6 +6,7 @@ Decisions log: `docs/decisions.md` — add a short entry for every non-obvious c
 ## Commands
 
 - `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm test` · `npm run format`
+- DB: `npm run db:start` · `db:reset` · `db:test` (pgTAP) · `db:types` (regenerate after every migration)
 - Before committing, all of these must pass: `npm run format:check && npm run lint && npm run typecheck && npm test`
 
 ## Rules
@@ -15,5 +16,6 @@ Decisions log: `docs/decisions.md` — add a short entry for every non-obvious c
 - Server state only via TanStack Query; query keys are defined centrally per feature.
 - Every data-driven component handles loading, empty and error states.
 - Accessibility: semantic HTML, keyboard operable, visible focus.
+- Every new table: RLS on, explicit minimal grants (nothing is granted by default), pgTAP coverage in `supabase/tests/database/`.
 - Linting is oxlint (not ESLint, see decision 002). Imports use the `@/` alias.
 - Conventional Commits, small and focused.

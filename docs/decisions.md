@@ -22,3 +22,28 @@ typescript-eslint or oxlint's type-aware mode supports TS 7.
 
 `noUncheckedIndexedAccess` and `noImplicitOverride` are on. `exactOptionalPropertyTypes` is off:
 it causes friction with Radix/shadcn and React Hook Form typings for little gain in this project.
+
+## 004 – Grants decide _what_, RLS decides _which rows_
+
+Supabase no longer grants table privileges in `public` automatically, so the migration grants
+explicitly and minimally. Column-level grants keep server-owned fields out of the client's reach:
+users cannot set `receipts.status` on insert, choose a `user_id`, or create global
+`category_mappings`. `TRUNCATE` (which bypasses RLS) is revoked. `anon` can only read
+`emission_categories`.
+
+## 005 – Receipt status transitions guarded in the database
+
+The edge function (`service_role`) drives `pending → processing → review | failed`. A trigger allows
+end users only `review → done` (confirm) and `failed → pending` (retry). This holds even if a
+client bypasses the UI.
+
+## 006 – `line_items.user_id` is denormalized, but kept consistent
+
+`line_items` carries `user_id` so RLS policies don't need a join. A composite foreign key
+`(receipt_id, user_id) → receipts(id, user_id)` makes it impossible to attach items to someone
+else's receipt.
+
+## 007 – Database behaviour is tested with pgTAP
+
+`supabase/tests/database` checks RLS, grants and status transitions per role. CI runs them against
+a fresh database and also fails when `src/types/database.ts` is out of date with the migrations.

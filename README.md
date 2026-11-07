@@ -17,7 +17,8 @@ Recharts · Zod · React Hook Form · Supabase · Gemini Flash (fallback: Groq) 
 ```bash
 nvm use            # Node 24
 npm install
-cp .env.example .env.local
+npm run db:start   # local Supabase (requires Docker)
+cp .env.example .env.local   # fill in PUBLISHABLE_KEY from `supabase status`
 npm run dev
 ```
 
@@ -32,3 +33,7 @@ npm run dev
 | `npm run format`        | Prettier (with Tailwind class ordering) |
 | `npm test`              | Vitest (single run)                     |
 | `npm run test:coverage` | Vitest with V8 coverage                 |
+| `npm run db:start`      | Start local Supabase (Docker)           |
+| `npm run db:reset`      | Re-apply migrations + seed              |
+| `npm run db:test`       | pgTAP tests for RLS, grants, triggers   |
+| `npm run db:types`      | Regenerate `src/types/database.ts`      |
