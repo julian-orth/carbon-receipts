@@ -170,10 +170,15 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
 - Aggregation happens in `security_invoker` views (`line_item_emissions`, `monthly_totals`,
   `monthly_emissions`), so RLS applies and the client only fetches small result sets. Only `done`
   receipts count; the effective date is the purchase date, falling back to the upload date.
-- Charts follow a data-viz checklist: both charts show magnitude, so they use **one sequential hue**
-  (validated reference palette) and carry identity in labels, not colour. The running month is
-  drawn lighter because it is incomplete. Every chart has a tooltip and a table view; the goal
-  status uses icon + text, never colour alone. No dual axes.
+- Charts follow a data-viz checklist: everything shown is magnitude, so it uses **one sequential
+  hue** (validated reference palette) and carries identity in labels, not colour. The trend is a
+  Recharts bar chart with tooltip and a table view; the running month is drawn lighter because it
+  is incomplete. The category breakdown is plain HTML bars with direct value labels – six sorted
+  values don't need an SVG chart. The goal status uses icon + text, never colour alone. No dual
+  axes. The "previous month" tile compares two _complete_ months; comparing with the running month
+  would always look like a big drop early in the month.
+- Screenshots of every page (desktop + mobile) were reviewed before shipping; that is how the
+  misleading month comparison and a too-narrow bar chart were caught.
 - Alternatives are like-for-like swaps in the same unit (e.g. ground beef → soy patties, milk →
   oat drink). Savings are computed from the same factors and cite their ifeu table row; products
   without an own category (e.g. tap water, soy yoghurt) carry their ifeu factor inline.
@@ -182,3 +187,14 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
 - Feature pages are lazy routes; Recharts, React and Supabase are separate vendor chunks
   (entry chunk 1.2 MB → 199 kB). A route error boundary asks for a reload when a chunk is gone
   after a deploy.
+
+## 017 – Demo account as a database function; E2E against the real stack
+
+- `private.reset_demo_data(user_id)` (migration) creates six months of receipts relative to today
+  plus one receipt waiting for review. Locally `seed.sql` creates the demo user and calls it; in
+  production the same function runs once from the SQL editor (optionally nightly via `pg_cron`).
+  The demo user signs in with a password from public env vars and has a low AI quota.
+- Playwright runs against local Supabase and the edge function with the mock LLM: magic link via
+  Mailpit → upload → Realtime status → review → dashboard total, on desktop and mobile. An axe scan
+  (WCAG 2.1 AA, serious/critical) covers login, dashboard, receipts and review – it caught a
+  focusable chart inside an `aria-hidden` container.
