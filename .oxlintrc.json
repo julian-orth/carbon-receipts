@@ -34,9 +34,25 @@
   },
   "overrides": [
     {
-      "files": ["src/components/ui/**"],
+      "files": ["**/src/components/ui/**"],
       "rules": {
         "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["**/src/lib/emissions/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/**", "../**", "react", "react/**", "@supabase/**", "zod"],
+                "message": "src/lib/emissions must stay dependency-free so the edge function (Deno) can reuse it."
+              }
+            ]
+          }
+        ]
       }
     }
   ],
