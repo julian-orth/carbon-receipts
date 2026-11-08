@@ -49,3 +49,33 @@ export function parseModelJson(text: string, provider: string): unknown {
     throw new LlmError('Model returned invalid JSON', { provider })
   }
 }
+
+/** Per-request limit. Edge functions have a wall-clock budget, so a hanging model must not eat it. */
+export const DEFAULT_TIMEOUT_MS = 30_000
+
+/**
+ * fetch with a timeout. A timeout is not retried on the same provider (it already cost
+ * the full budget) – the caller moves on to the next one. Network errors are retryable.
+ */
+export async function fetchWithTimeout(
+  fetchFn: FetchFn,
+  url: string,
+  init: RequestInit,
+  options: { provider: string; timeoutMs: number; signal?: AbortSignal | undefined },
+): Promise<Response> {
+  const timeout = AbortSignal.timeout(options.timeoutMs)
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
+  try {
+    return await fetchFn(url, { ...init, signal })
+  } catch (error) {
+    if (timeout.aborted) {
+      throw new LlmError(`${options.provider} timed out after ${options.timeoutMs} ms`, {
+        provider: options.provider,
+      })
+    }
+    throw new LlmError(
+      `${options.provider} request failed: ${error instanceof Error ? error.message : String(error)}`,
+      { provider: options.provider, retryable: true },
+    )
+  }
+}

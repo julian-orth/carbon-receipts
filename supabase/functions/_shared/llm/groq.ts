@@ -1,5 +1,7 @@
 import {
+  DEFAULT_TIMEOUT_MS,
   type FetchFn,
+  fetchWithTimeout,
   isRetryableStatus,
   LlmError,
   type LlmProvider,
@@ -14,8 +16,10 @@ export function createGroqProvider(options: {
   apiKey: string
   model: string
   fetch?: FetchFn
+  timeoutMs?: number
 }): LlmProvider {
   const fetchFn = options.fetch ?? fetch
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const name = `groq:${options.model}`
 
   return {
@@ -29,23 +33,27 @@ export function createGroqProvider(options: {
         })
       }
 
-      const response = await fetchFn('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        signal: signal ?? null,
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${options.apiKey}`,
+      const response = await fetchWithTimeout(
+        fetchFn,
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${options.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: options.model,
+            temperature: 0,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: request.system },
+              { role: 'user', content },
+            ],
+          }),
         },
-        body: JSON.stringify({
-          model: options.model,
-          temperature: 0,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: request.system },
-            { role: 'user', content },
-          ],
-        }),
-      })
+        { provider: name, timeoutMs, signal },
+      )
 
       if (!response.ok) {
         throw new LlmError(`Groq request failed with ${response.status}`, {

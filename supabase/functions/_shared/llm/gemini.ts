@@ -1,5 +1,7 @@
 import {
+  DEFAULT_TIMEOUT_MS,
   type FetchFn,
+  fetchWithTimeout,
   isRetryableStatus,
   LlmError,
   type LlmProvider,
@@ -15,8 +17,10 @@ export function createGeminiProvider(options: {
   apiKey: string
   model: string
   fetch?: FetchFn
+  timeoutMs?: number
 }): LlmProvider {
   const fetchFn = options.fetch ?? fetch
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const name = `gemini:${options.model}`
 
   return {
@@ -29,11 +33,11 @@ export function createGeminiProvider(options: {
         })
       }
 
-      const response = await fetchFn(
+      const response = await fetchWithTimeout(
+        fetchFn,
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(options.model)}:generateContent`,
         {
           method: 'POST',
-          signal: signal ?? null,
           headers: { 'content-type': 'application/json', 'x-goog-api-key': options.apiKey },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: request.system }] },
@@ -41,6 +45,7 @@ export function createGeminiProvider(options: {
             generationConfig: { responseMimeType: 'application/json', temperature: 0 },
           }),
         },
+        { provider: name, timeoutMs, signal },
       )
 
       if (!response.ok) {

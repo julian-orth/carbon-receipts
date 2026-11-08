@@ -24,7 +24,7 @@ declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | unde
 type Admin = SupabaseClient<Database>
 type ClaimedReceipt = { id: string; user_id: string; file_path: string | null }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
 const DEFAULT_GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 const corsHeaders = {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createGeminiProvider } from './gemini.ts'
 import { createGroqProvider } from './groq.ts'
-import { LlmError, parseModelJson } from './types.ts'
+import { fetchWithTimeout, LlmError, parseModelJson } from './types.ts'
 
 const image = { mimeType: 'image/jpeg', base64: 'AAAA' }
 const request = { system: 'system', prompt: 'prompt', image }
@@ -100,5 +100,43 @@ describe('parseModelJson', () => {
 
   it('throws an LlmError for invalid JSON', () => {
     expect(() => parseModelJson('not json', 'x')).toThrow(LlmError)
+  })
+})
+
+describe('fetchWithTimeout', () => {
+  /** A fetch that never answers until it is aborted. */
+  const hangingFetch = vi.fn<typeof fetch>(
+    (_url, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+      }),
+  )
+
+  it('turns a hanging request into a non-retryable LlmError', async () => {
+    const error = await fetchWithTimeout(
+      hangingFetch,
+      'https://x',
+      {},
+      { provider: 'gemini', timeoutMs: 20 },
+    ).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(LlmError)
+    expect(error).toMatchObject({ retryable: false, message: 'gemini timed out after 20 ms' })
+  })
+
+  it('marks network errors as retryable', async () => {
+    const offline = vi.fn<typeof fetch>(() => Promise.reject(new TypeError('fetch failed')))
+    await expect(
+      fetchWithTimeout(offline, 'https://x', {}, { provider: 'groq', timeoutMs: 1000 }),
+    ).rejects.toMatchObject({ retryable: true, message: 'groq request failed: fetch failed' })
+  })
+
+  it('is used by the providers', async () => {
+    const gemini = createGeminiProvider({
+      apiKey: 'k',
+      model: 'm',
+      fetch: hangingFetch,
+      timeoutMs: 20,
+    })
+    await expect(gemini.generateJson(request)).rejects.toThrow(/timed out after 20 ms/)
   })
 })

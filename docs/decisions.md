@@ -143,7 +143,11 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
   exponential backoff and full jitter, then moves to the next provider. Output that fails Zod
   validation also moves on to the next provider instead of being stored.
 - Model ids are configuration (`GEMINI_MODEL`, `GROQ_MODEL`), because free-tier model names
-  rotate.
+  rotate – `gemini-2.5-flash` was closed to new users shortly after the first deploy; the default
+  is now `gemini-3.8-flash`.
+- Every provider call has a 30 s timeout. A timeout is not retried on the same provider (it already
+  used the budget) but moves on to the next one; network errors and 429/5xx are retried with backoff.
+  Edge functions have a wall-clock limit, so a hanging model must not consume it.
 - Learned `category_mappings` (user before global) override the model's category and get
   confidence 1. For photos the model is still needed to read the receipt, so "known names don't
   go to the AI" applies to the categorisation, not to the extraction.
