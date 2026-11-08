@@ -144,7 +144,10 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
   validation also moves on to the next provider instead of being stored.
 - Model ids are configuration (`GEMINI_MODEL`, `GROQ_MODEL`), because free-tier model names
   rotate – `gemini-2.5-flash` was closed to new users shortly after the first deploy; the default
-  is now `gemini-3.8-flash`.
+  is now `gemini-3.8-flash`. On Groq the only vision model left is `qwen/qwen3.8-27b` (preview);
+  `llama-4-scout` had disappeared. Tested with a rendered receipt: correct categories, weights,
+  multi-packs and ignored deposits in ~1.7 s, but the free plan's 8k tokens/minute allow only about
+  one receipt per minute – fine for a fallback, not for a primary provider.
 - Every provider call has a 30 s timeout. A timeout is not retried on the same provider (it already
   used the budget) but moves on to the next one; network errors and 429/5xx are retried with backoff.
   Edge functions have a wall-clock limit, so a hanging model must not consume it.

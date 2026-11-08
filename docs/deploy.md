@@ -25,7 +25,7 @@ Vercel (frontend), Google AI Studio (Gemini) and Groq.
    ```bash
    supabase secrets set LLM_PROVIDERS=gemini,groq GEMINI_API_KEY=... GROQ_API_KEY=...
    # optional, model names rotate on the free tiers:
-   # supabase secrets set GEMINI_MODEL=gemini-3.8-flash GROQ_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+   # supabase secrets set GEMINI_MODEL=gemini-3.8-flash GROQ_MODEL=qwen/qwen3.8-27b
    ```
 
 3. Deploy the function (`verify_jwt = false` comes from `supabase/config.toml`; the function

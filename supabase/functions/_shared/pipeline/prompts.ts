@@ -22,7 +22,7 @@ export function buildExtractionRequest(
   "purchased_at": "YYYY-MM-DD" | null, // Kaufdatum
   "items": [
     {
-      "raw_text": string,           // Text der Position wie auf dem Bon
+      "raw_text": string,           // nur die Artikelzeile wie auf dem Bon, ohne Mengen-/Gewichtszeilen
       "quantity": number | null,    // Menge, z. B. 0.512 bei "0,512 kg x 1,99 €/kg" oder 2 bei "2 x"
       "unit": "kg" | "g" | "l" | "ml" | "stk" | null,
       "price": number | null,       // Gesamtpreis der Zeile in EUR
@@ -33,7 +33,10 @@ export function buildExtractionRequest(
 }
 
 Regeln:
-- Ignoriere Summen, Zwischensummen, MwSt., Zahlungsart, Rückgeld, Pfand und Rabatte.
+- Ignoriere Summen, Zwischensummen, MwSt., Zahlungsart, Rückgeld, Pfand, Leergut und Rabatte.
+- Mengen- und Gewichtszeilen ohne eigenen Artikelnamen (z. B. "2 x 0,89" oder "1,186 kg x 1,41 EUR/kg")
+  gehören zu genau einer Position. Ordne sie der Position zu, deren Preis Menge × Einzelpreis ergibt,
+  und trage die Menge in quantity/unit ein – nicht in raw_text.
 - Wenn die Menge nur im Produktnamen steht (z. B. "Milch 1L"), lass quantity und unit leer.
 - Wähle category_slug nur aus dieser Liste, sonst null:
 ${categoryList}

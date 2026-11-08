@@ -12,6 +12,10 @@ describe('normalizeProductName', () => {
     ['Weißkohl', 'weißkohl'],
     ['Hafer-Drink (Barista)', 'hafer drink barista'],
     ['Eier Freiland 10 Stk', 'eier freiland'],
+    ['HAFER DRINK BARISTA 2 x 0,89', 'hafer drink barista'],
+    ['BANANEN 1,186 kg x 1,41 EUR/kg', 'bananen'],
+    ['Tomaten 0,99 €/kg lose', 'tomaten lose'],
+    ['Xylit Kaugummi', 'xylit kaugummi'],
   ])('%j → %j', (input, expected) => {
     expect(normalizeProductName(input)).toBe(expected)
   })

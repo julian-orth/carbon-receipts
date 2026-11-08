@@ -10,6 +10,8 @@ export function normalizeProductName(raw: string): string {
     raw
       .normalize('NFC')
       .toLowerCase()
+      // unit prices: "1,41 EUR/kg", "0,99 €/l"
+      .replace(/\d+(?:[.,]\d+)?\s*(?:eur|€)\s*\/\s*(?:kg|l|stk|st)\b/g, ' ')
       // pack sizes and multi-packs: "500g", "1,5 l", "6x0,33l"
       .replace(/(\d+\s*[x×]\s*)?\d+(?:[.,]\d+)?\s*(kg|g|gr|ml|cl|l|ltr|stk|st)(?![a-zäöüß])/g, ' ')
       // percentages: "3,8%", "40 % fett"
@@ -18,6 +20,8 @@ export function normalizeProductName(raw: string): string {
       .replace(/\d+(?:[.,]\d+)?/g, ' ')
       // everything that is not a letter (incl. umlauts) or a space
       .replace(/[^a-zäöüß\s]/g, ' ')
+      // leftovers of quantity markers such as "2 x 0,89"
+      .replace(/(^|\s)[x×](?=\s|$)/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
   )

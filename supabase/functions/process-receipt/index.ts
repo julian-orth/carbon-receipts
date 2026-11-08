@@ -25,7 +25,7 @@ type Admin = SupabaseClient<Database>
 type ClaimedReceipt = { id: string; user_id: string; file_path: string | null }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
-const DEFAULT_GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+const DEFAULT_GROQ_MODEL = 'qwen/qwen3.8-27b'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
