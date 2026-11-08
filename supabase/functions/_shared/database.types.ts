@@ -35,6 +35,8 @@ export type Database = {
           created_at: string
           id: string
           normalized_name: string
+          quantity: number | null
+          unit: Database['public']['Enums']['emission_unit'] | null
           updated_at: string
           user_id: string | null
         }
@@ -43,6 +45,8 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_name: string
+          quantity?: number | null
+          unit?: Database['public']['Enums']['emission_unit'] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -51,6 +55,8 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_name?: string
+          quantity?: number | null
+          unit?: Database['public']['Enums']['emission_unit'] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -159,6 +165,7 @@ export type Database = {
           normalized_name: string | null
           price: number | null
           quantity: number | null
+          quantity_source: string | null
           raw_text: string
           receipt_id: string
           reviewed: boolean
@@ -175,6 +182,7 @@ export type Database = {
           normalized_name?: string | null
           price?: number | null
           quantity?: number | null
+          quantity_source?: string | null
           raw_text: string
           receipt_id: string
           reviewed?: boolean
@@ -191,6 +199,7 @@ export type Database = {
           normalized_name?: string | null
           price?: number | null
           quantity?: number | null
+          quantity_source?: string | null
           raw_text?: string
           receipt_id?: string
           reviewed?: boolean

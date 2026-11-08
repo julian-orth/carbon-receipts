@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (run as postgres, bypassing RLS)
@@ -120,6 +120,21 @@ select is(
   (select count(*) from public.category_mappings where normalized_name = 'hafer drink')::int,
   1,
   'two upserts leave a single mapping'
+);
+
+select lives_ok(
+  $$ insert into public.category_mappings (normalized_name, category_id, quantity, unit)
+     values ('kinder bueno', 'aaaaaaaa-0000-0000-0000-000000000001', 0.043, 'kg')
+     on conflict (user_id, normalized_name) do update
+       set category_id = excluded.category_id, quantity = excluded.quantity, unit = excluded.unit $$,
+  'Alice can learn an amount for a product'
+);
+
+select throws_ok(
+  $$ insert into public.category_mappings (normalized_name, category_id, quantity)
+     values ('halbe menge', 'aaaaaaaa-0000-0000-0000-000000000001', 1) $$,
+  '23514', null,
+  'a learned amount needs both quantity and unit'
 );
 
 -- ---------------------------------------------------------------------------
