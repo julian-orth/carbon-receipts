@@ -47,7 +47,7 @@ export function LineItemRow({
   item: LineItem
   categories: readonly EmissionCategory[]
 }) {
-  const save = useSaveLineItem(item.receipt_id)
+  const save = useSaveLineItem()
   const baseId = useId()
   const categoriesById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
   const groups = useMemo(() => {
@@ -98,10 +98,10 @@ export function LineItemRow({
         id: item.id,
         normalizedName: item.normalized_name,
         categoryId: data.categoryId || null,
-        categoryChanged: (data.categoryId || null) !== item.category_id,
         quantity: nextQuantity,
         unit: nextUnit,
         co2eKg: result.ok ? result.co2eKg : null,
+        category: nextCategory ?? null,
       },
       { onSuccess: () => form.reset(data) },
     )
@@ -191,6 +191,17 @@ export function LineItemRow({
           </p>
         )}
 
+        {item.quantity_source === 'learned' && !isDirty && (
+          <p className="text-xs text-muted-foreground">
+            Menge aus deiner früheren Korrektur übernommen.
+          </p>
+        )}
+        {item.quantity_source === 'estimated' && !isDirty && (
+          <p className="text-xs text-muted-foreground">
+            Menge von der KI geschätzt (übliche Packungsgröße) – bitte prüfen.
+          </p>
+        )}
+
         {/* Preview and actions on separate rows: the preview changes while typing and must not move the button. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm sm:min-w-0 sm:flex-1" aria-live="polite">
@@ -220,6 +231,12 @@ export function LineItemRow({
             )}
           </p>
           <div className="flex shrink-0 items-center gap-2">
+            {save.isSuccess && save.data.appliedTo > 0 && !isDirty && (
+              <output className="text-xs text-muted-foreground">
+                Auch bei {save.data.appliedTo} weiteren offenen{' '}
+                {save.data.appliedTo === 1 ? 'Position' : 'Positionen'} übernommen
+              </output>
+            )}
             {save.isError && (
               <span role="alert" className="text-sm text-destructive">
                 Speichern fehlgeschlagen

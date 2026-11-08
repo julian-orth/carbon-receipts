@@ -21,6 +21,8 @@ describe('parseReceiptExtraction', () => {
       raw_text: 'Bananen',
       quantity: 1.2,
       unit: 'kg',
+      estimated_quantity: null,
+      estimated_unit: null,
       price: 1.67,
       category_slug: 'bananas',
       confidence: 0.9,
@@ -37,6 +39,8 @@ describe('parseReceiptExtraction', () => {
       items: [
         {
           raw_text: 'Milch 1L',
+          estimated_quantity: null,
+          estimated_unit: null,
           quantity: null,
           unit: null,
           price: 1.39,

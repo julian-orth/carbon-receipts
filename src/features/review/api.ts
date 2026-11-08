@@ -2,7 +2,8 @@ import { RECEIPTS_BUCKET } from '@/features/receipts/api'
 import type { Receipt } from '@/features/receipts/types'
 import { supabase } from '@/lib/supabase'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
-import type { LineItem } from './review-logic'
+import type { EmissionCategory } from '@/features/categories'
+import { type Learned, learnedUpdate, type LineItem } from './review-logic'
 
 export async function fetchReceipt(id: string): Promise<Receipt | null> {
   const { data, error } = await supabase.from('receipts').select('*').eq('id', id).maybeSingle()
@@ -34,48 +35,110 @@ export type LineItemUpdate = {
   id: string
   normalizedName: string | null
   categoryId: string | null
-  categoryChanged: boolean
   quantity: number | null
   unit: EmissionUnit | null
   co2eKg: number | null
+  /** Factor of the chosen category, needed to recalculate other open items. */
+  category: EmissionCategory | null
 }
 
 /**
- * Saves a reviewed item. A changed category is also stored as the user's
- * mapping, so the next receipt with the same product is categorised correctly.
+ * Saves a reviewed item and learns from it: category and amount become the user's
+ * mapping for this product, and other open items of the same product are updated
+ * right away. Returns how many other items were updated.
  */
-export async function saveLineItem(update: LineItemUpdate): Promise<void> {
+export async function saveLineItem(update: LineItemUpdate): Promise<{ appliedTo: number }> {
   const { error } = await supabase
     .from('line_items')
     .update({
       category_id: update.categoryId,
       quantity: update.quantity,
       unit: update.unit,
+      quantity_source: update.quantity === null ? null : 'user',
       co2e_kg: update.co2eKg,
       reviewed: true,
     })
     .eq('id', update.id)
   if (error) throw error
 
-  if (update.categoryChanged && update.categoryId && update.normalizedName) {
-    const mapping = await supabase
-      .from('category_mappings')
-      .upsert(
-        { normalized_name: update.normalizedName, category_id: update.categoryId },
-        { onConflict: 'user_id,normalized_name' },
-      )
-    if (mapping.error) throw mapping.error
+  if (!update.normalizedName || !update.categoryId || !update.category) return { appliedTo: 0 }
+  const learned: Learned = {
+    categoryId: update.categoryId,
+    quantity: update.quantity,
+    unit: update.unit,
   }
+
+  const mapping = await supabase.from('category_mappings').upsert(
+    {
+      normalized_name: update.normalizedName,
+      category_id: learned.categoryId,
+      quantity: learned.quantity,
+      unit: learned.unit,
+    },
+    { onConflict: 'user_id,normalized_name' },
+  )
+  if (mapping.error) throw mapping.error
+
+  const { data: open, error: openError } = await supabase
+    .from('line_items')
+    .select('id, category_id, quantity, unit, quantity_source, price')
+    .eq('normalized_name', update.normalizedName)
+    .eq('reviewed', false)
+    .neq('id', update.id)
+  if (openError) throw openError
+
+  let appliedTo = 0
+  for (const item of open) {
+    const next = learnedUpdate(item, learned, update.category)
+    if (!next) continue
+    const { error: applyError } = await supabase.from('line_items').update(next).eq('id', item.id)
+    if (applyError) throw applyError
+    appliedTo++
+  }
+  return { appliedTo }
 }
 
-/** Marks all items as reviewed and moves the receipt `review → done`. */
+/**
+ * Learns every categorised item of the receipt, marks all items as reviewed and
+ * moves the receipt `review → done`.
+ */
 export async function confirmReceipt(receiptId: string): Promise<void> {
-  const items = await supabase
+  const { data: items, error: itemsError } = await supabase
+    .from('line_items')
+    .select('normalized_name, category_id, quantity, unit')
+    .eq('receipt_id', receiptId)
+  if (itemsError) throw itemsError
+
+  const learnable = items.filter(
+    (item): item is typeof item & { normalized_name: string; category_id: string } =>
+      item.normalized_name !== null && item.category_id !== null,
+  )
+  // Two batches, so an item without an amount does not erase an amount learned earlier.
+  const withAmount = learnable.filter((item) => item.quantity !== null && item.unit !== null)
+  const withoutAmount = learnable.filter((item) => item.quantity === null || item.unit === null)
+  for (const batch of [
+    withAmount.map(({ normalized_name, category_id, quantity, unit }) => ({
+      normalized_name,
+      category_id,
+      quantity,
+      unit,
+    })),
+    withoutAmount.map(({ normalized_name, category_id }) => ({ normalized_name, category_id })),
+  ]) {
+    if (batch.length === 0) continue
+    const unique = [...new Map(batch.map((row) => [row.normalized_name, row])).values()]
+    const { error } = await supabase
+      .from('category_mappings')
+      .upsert(unique, { onConflict: 'user_id,normalized_name' })
+    if (error) throw error
+  }
+
+  const reviewed = await supabase
     .from('line_items')
     .update({ reviewed: true })
     .eq('receipt_id', receiptId)
     .eq('reviewed', false)
-  if (items.error) throw items.error
+  if (reviewed.error) throw reviewed.error
 
   const { error } = await supabase
     .from('receipts')

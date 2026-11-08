@@ -29,7 +29,11 @@ test('dashboard, receipts and review', async ({ page }) => {
   await expect(page.getByRole('list', { name: 'Deine Belege' })).toBeVisible()
   await expectNoSeriousViolations(page)
 
-  await page.getByRole('link', { name: 'Prüfen' }).click()
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Wochenmarkt' })
+    .getByRole('link', { name: 'Prüfen' })
+    .click()
   await expect(page.getByRole('heading', { level: 1, name: 'Wochenmarkt' })).toBeVisible()
   await expectNoSeriousViolations(page)
 })

@@ -23,8 +23,10 @@ export function buildExtractionRequest(
   "items": [
     {
       "raw_text": string,           // nur die Artikelzeile wie auf dem Bon, ohne Mengen-/Gewichtszeilen
-      "quantity": number | null,    // Menge, z. B. 0.512 bei "0,512 kg x 1,99 €/kg" oder 2 bei "2 x"
+      "quantity": number | null,    // nur wenn auf dem Bon: z. B. 0.512 bei "0,512 kg x 1,99 €/kg", 2 bei "2 x"
       "unit": "kg" | "g" | "l" | "ml" | "stk" | null,
+      "estimated_quantity": number | null, // übliche Packungsgröße, wenn auf dem Bon keine Menge steht
+      "estimated_unit": "kg" | "g" | "l" | "ml" | "stk" | null,
       "price": number | null,       // Gesamtpreis der Zeile in EUR
       "category_slug": string | null,
       "confidence": number          // 0 bis 1: wie sicher die Kategorie passt
@@ -38,6 +40,13 @@ Regeln:
   gehören zu genau einer Position. Ordne sie der Position zu, deren Preis Menge × Einzelpreis ergibt,
   und trage die Menge in quantity/unit ein – nicht in raw_text.
 - Wenn die Menge nur im Produktnamen steht (z. B. "Milch 1L"), lass quantity und unit leer.
+- Steht gar keine Menge auf dem Bon, schätze die übliche Packungsgröße des Produkts in Deutschland
+  als estimated_quantity/estimated_unit (z. B. Kinder Bueno 43 g, Kaffee gemahlen 500 g, Quark 250 g).
+  Nutze Preis und Pfand als Hinweis (Getränk mit 0,25 € Pfand: Einwegflasche, oft 1,5 l). Gewichtsware
+  (Fleisch, Käse an der Theke, Obst lose) ohne Gewichtsangabe: nur schätzen, wenn der Preis es nahelegt.
+- Löse Abkürzungen auf, bevor du die Kategorie wählst (z. B. "Ferr.Duplo" = Ferrero Duplo → Schokolade,
+  "Jac.Krönung gemah." = Jacobs Krönung gemahlen → Kaffee).
+- Nicht-Lebensmittel (Tierbedarf, Drogerie, Haushalt) und Fertiggerichte ohne passende Kategorie: category_slug null.
 - Wähle category_slug nur aus dieser Liste, sonst null:
 ${categoryList}
 - confidence unter 0.7, wenn die Kategorie nur geraten ist oder der Text schwer lesbar ist.`

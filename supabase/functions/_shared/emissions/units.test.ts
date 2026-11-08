@@ -31,6 +31,11 @@ describe('normalizeQuantity', () => {
     expect(result?.quantity).toBeCloseTo(expectedQuantity, 10)
   })
 
+  it('returns clean decimals without floating point noise', () => {
+    expect(normalizeQuantity(43, 'g')).toEqual({ quantity: 0.043, unit: 'kg' })
+    expect(normalizeQuantity(330, 'ml')).toEqual({ quantity: 0.33, unit: 'l' })
+  })
+
   it('rejects unknown units and non-positive quantities', () => {
     expect(normalizeQuantity(1, 'bushel')).toBeNull()
     expect(normalizeQuantity(0, 'kg')).toBeNull()

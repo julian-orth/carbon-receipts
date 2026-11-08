@@ -48,7 +48,7 @@ export function computeCo2e(draft: ItemDraft, category: EmissionCategory | undef
   }
 }
 
-export type AttentionReason = 'no_category' | 'low_confidence' | 'no_co2e'
+export type AttentionReason = 'no_category' | 'low_confidence' | 'estimated_quantity' | 'no_co2e'
 
 /** Why an unreviewed item should be looked at; empty when it looks fine. */
 export function attentionReasons(item: LineItem): AttentionReason[] {
@@ -56,6 +56,7 @@ export function attentionReasons(item: LineItem): AttentionReason[] {
   const reasons: AttentionReason[] = []
   if (item.category_id === null) reasons.push('no_category')
   else if ((item.confidence ?? 0) < CONFIDENCE_THRESHOLD) reasons.push('low_confidence')
+  if (item.quantity_source === 'estimated') reasons.push('estimated_quantity')
   if (item.co2e_kg === null) reasons.push('no_co2e')
   return reasons
 }
@@ -63,6 +64,7 @@ export function attentionReasons(item: LineItem): AttentionReason[] {
 export const ATTENTION_LABEL: Record<AttentionReason, string> = {
   no_category: 'Kategorie fehlt',
   low_confidence: 'Kategorie unsicher',
+  estimated_quantity: 'Menge geschätzt',
   no_co2e: 'Kein CO₂-Wert',
 }
 
@@ -75,4 +77,40 @@ export function parseQuantityInput(value: string): number | null | undefined {
 
 export function formatQuantityInput(value: number | null): string {
   return value === null ? '' : String(value).replace('.', ',')
+}
+
+export type Learned = { categoryId: string; quantity: number | null; unit: EmissionUnit | null }
+
+/**
+ * What a correction means for another *open* item of the same product: the category
+ * always follows; the amount only replaces amounts that did not come from the receipt.
+ * Returns null when nothing would change.
+ */
+export function learnedUpdate(
+  item: Pick<LineItem, 'category_id' | 'quantity' | 'unit' | 'quantity_source' | 'price'>,
+  learned: Learned,
+  category: EmissionCategory,
+): Pick<LineItem, 'category_id' | 'quantity' | 'unit' | 'quantity_source' | 'co2e_kg'> | null {
+  const takeAmount =
+    learned.quantity !== null && learned.unit !== null && item.quantity_source !== 'receipt'
+  const quantity = takeAmount ? learned.quantity : item.quantity
+  const unit = takeAmount ? learned.unit : item.unit
+  const quantitySource = takeAmount ? 'learned' : item.quantity_source
+  const result = computeCo2e(
+    { categoryId: learned.categoryId, quantity, unit, price: item.price },
+    category,
+  )
+  const next = {
+    category_id: learned.categoryId,
+    quantity,
+    unit,
+    quantity_source: quantitySource,
+    co2e_kg: result.ok ? result.co2eKg : null,
+  }
+  const unchanged =
+    item.category_id === next.category_id &&
+    item.quantity === next.quantity &&
+    item.unit === next.unit &&
+    item.quantity_source === next.quantity_source
+  return unchanged ? null : next
 }

@@ -1,3 +1,4 @@
+import { roundTo } from './round.ts'
 import type { EmissionUnit } from './types.ts'
 
 type UnitConversion = { unit: EmissionUnit; factor: number }
@@ -43,7 +44,8 @@ export function normalizeQuantity(
 ): { quantity: number; unit: EmissionUnit } | null {
   const conversion = UNIT_ALIASES[rawUnit.trim().toLowerCase().replace(/\.$/, '')]
   if (!conversion || !Number.isFinite(quantity) || quantity <= 0) return null
-  return { quantity: quantity * conversion.factor, unit: conversion.unit }
+  // 43 g × 0.001 = 0.043000000000000003 – round away binary noise (6 places ≥ DB precision)
+  return { quantity: roundTo(quantity * conversion.factor, 6), unit: conversion.unit }
 }
 
 /**

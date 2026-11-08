@@ -23,11 +23,12 @@ export function useReceiptImage(path: string | null) {
   })
 }
 
-export function useSaveLineItem(receiptId: string) {
+export function useSaveLineItem() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: saveLineItem,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: reviewKeys.items(receiptId) }),
+    // Learning can update open items on other receipts too.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: reviewKeys.all }),
   })
 }
 

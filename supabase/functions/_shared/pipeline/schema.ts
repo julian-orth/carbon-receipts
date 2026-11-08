@@ -24,6 +24,9 @@ export const extractedItemSchema = z.object({
   raw_text: z.string().trim().min(1).max(200),
   quantity: looseNullableNumber.default(null),
   unit: optionalText(12).default(null),
+  /** Typical pack size when the receipt shows no amount – a suggestion, flagged for review. */
+  estimated_quantity: looseNullableNumber.default(null),
+  estimated_unit: optionalText(12).default(null),
   /** Total price of the line in EUR; negative for discounts/deposit returns. */
   price: looseNullableNumber.default(null),
   category_slug: optionalText(64).default(null),

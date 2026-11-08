@@ -205,3 +205,23 @@ enforces `source_type = 'photo'`. The `receipt_source` enum keeps `csv` and `pdf
   Mailpit → upload → Realtime status → review → dashboard total, on desktop and mobile. An axe scan
   (WCAG 2.1 AA, serious/critical) covers login, dashboard, receipts and review – it caught a
   focusable chart inside an `aria-hidden` container.
+
+## 018 – Real receipts rarely show amounts: estimate, mark, learn
+
+A real Kaufland receipt showed the limit of the first version: packaged goods carry their size on
+the package, not on the receipt, so only 3 of 13 items got a CO₂e value.
+
+- The model may now suggest a typical pack size (`estimated_quantity`) when the receipt shows no
+  amount. The code still does the calculation; the amount is stored with
+  `quantity_source = 'estimated'` and flagged in the review ("Menge geschätzt"). Same receipt
+  afterwards: 10 of 12 items with a value.
+- Order of precedence for amounts: printed on the receipt → learned from the user → estimated.
+  For categories: user mapping → global mapping → model.
+- **Learning covers amounts, not only categories.** Saving an item (changed or "Passt so") and
+  confirming a receipt store category and amount as the user's mapping. A learned amount is only
+  used when the receipt shows none, so weighed goods keep their printed weight. A correction is
+  also applied right away to other open items of the same product.
+- Deposit and empties ("Pfand", "Leergut") are filtered in code; the prompt alone missed
+  "Pfandartikel".
+- Limitation: learning is keyed by the normalized product name, so the same product with a
+  different abbreviation at another store ("Ferr.Duplo" vs. "FERRERO DUPLO") is learned separately.

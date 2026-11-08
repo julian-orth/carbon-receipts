@@ -29,7 +29,11 @@ test('demo: dashboard shows trend, goal, hotspots and alternatives', async ({ pa
 test('demo: the receipt waiting for review flags uncertain items', async ({ page }) => {
   await signInAsDemo(page)
   await page.getByRole('link', { name: 'Belege' }).click()
-  await page.getByRole('link', { name: 'Prüfen' }).click()
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Wochenmarkt' })
+    .getByRole('link', { name: 'Prüfen' })
+    .click()
 
   await expect(page.getByRole('heading', { level: 1, name: 'Wochenmarkt' })).toBeVisible()
   await expect(page.getByText('2 Positionen brauchen deine Prüfung')).toBeVisible()

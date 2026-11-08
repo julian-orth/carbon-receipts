@@ -65,6 +65,7 @@ function item(overrides: Partial<LineItem>): LineItem {
     category_id: null,
     confidence: 0,
     reviewed: false,
+    quantity_source: null,
     co2e_kg: null,
     created_at: '2026-11-07T10:00:00Z',
     updated_at: '2026-11-07T10:00:00Z',
@@ -105,7 +106,7 @@ describe('ReviewPage', () => {
     mockedApi.fetchReceipt.mockResolvedValue(receipt)
     mockedApi.fetchLineItems.mockResolvedValue([beef, gouda])
     mockedApi.fetchImageUrl.mockResolvedValue('https://example.com/signed.jpg')
-    mockedApi.saveLineItem.mockResolvedValue()
+    mockedApi.saveLineItem.mockResolvedValue({ appliedTo: 0 })
     mockedApi.confirmReceipt.mockResolvedValue()
   })
 
@@ -145,16 +146,16 @@ describe('ReviewPage', () => {
         id: 'i-gouda',
         normalizedName: 'gouda jung scheiben',
         categoryId: 'cheese',
-        categoryChanged: true,
         quantity: 0.2,
         unit: 'kg',
         co2eKg: 1.14,
+        category: expect.objectContaining({ id: 'cheese', co2e_per_unit: 5.7 }),
       },
       expect.anything(),
     )
   })
 
-  it('confirms an unchanged item without creating a mapping', async () => {
+  it('confirms an unchanged item', async () => {
     const user = userEvent.setup()
     renderReview()
     const beefRow = await screen.findByRole('form', { name: 'Rinderhack 500g' })
@@ -162,9 +163,42 @@ describe('ReviewPage', () => {
     await user.click(within(beefRow).getByRole('button', { name: 'Passt so' }))
 
     expect(mockedApi.saveLineItem).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'i-beef', categoryChanged: false, co2eKg: 4.6 }),
+      expect.objectContaining({ id: 'i-beef', categoryId: 'beef', co2eKg: 4.6 }),
       expect.anything(),
     )
+  })
+
+  it('tells the user when a correction was applied to other open items', async () => {
+    mockedApi.saveLineItem.mockResolvedValue({ appliedTo: 2 })
+    const user = userEvent.setup()
+    renderReview()
+    const beefRow = await screen.findByRole('form', { name: 'Rinderhack 500g' })
+
+    await user.click(within(beefRow).getByRole('button', { name: 'Passt so' }))
+
+    expect(
+      await within(beefRow).findByText('Auch bei 2 weiteren offenen Positionen übernommen'),
+    ).toBeInTheDocument()
+  })
+
+  it('flags estimated amounts and explains where they come from', async () => {
+    mockedApi.fetchLineItems.mockResolvedValue([
+      {
+        ...gouda,
+        quantity: 0.15,
+        unit: 'kg',
+        quantity_source: 'estimated',
+        category_id: 'cheese',
+        confidence: 0.9,
+        co2e_kg: 0.855,
+      },
+    ])
+    renderReview()
+    const goudaRow = await screen.findByRole('form', { name: 'Gouda jung Scheiben' })
+
+    expect(within(goudaRow).getByText('Menge geschätzt')).toBeInTheDocument()
+    expect(within(goudaRow).getByText(/von der KI geschätzt/)).toBeInTheDocument()
+    expect(within(goudaRow).getByLabelText('Menge')).toHaveValue('0,15')
   })
 
   it('rejects an invalid quantity', async () => {

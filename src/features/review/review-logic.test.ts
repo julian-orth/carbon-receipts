@@ -4,6 +4,7 @@ import {
   attentionReasons,
   computeCo2e,
   formatQuantityInput,
+  learnedUpdate,
   type LineItem,
   parseQuantityInput,
 } from './review-logic'
@@ -40,6 +41,7 @@ function lineItem(overrides: Partial<LineItem>): LineItem {
     category_id: 'beef',
     confidence: 0.9,
     reviewed: false,
+    quantity_source: null,
     co2e_kg: 9.2,
     created_at: '2026-11-07T10:00:00Z',
     updated_at: '2026-11-07T10:00:00Z',
@@ -97,6 +99,12 @@ describe('attentionReasons', () => {
     expect(attentionReasons(lineItem({ confidence: 0.5 }))).toEqual(['low_confidence'])
   })
 
+  it('flags estimated amounts', () => {
+    expect(attentionReasons(lineItem({ quantity_source: 'estimated' }))).toEqual([
+      'estimated_quantity',
+    ])
+  })
+
   it('never flags reviewed items', () => {
     expect(
       attentionReasons(lineItem({ reviewed: true, category_id: null, co2e_kg: null })),
@@ -119,5 +127,80 @@ describe('quantity input', () => {
   it('formats with a German decimal comma', () => {
     expect(formatQuantityInput(0.5)).toBe('0,5')
     expect(formatQuantityInput(null)).toBe('')
+  })
+})
+
+describe('learnedUpdate', () => {
+  const cheese: EmissionCategory = {
+    ...beef,
+    id: 'cheese',
+    slug: 'cheese',
+    label: 'Käse',
+    co2e_per_unit: 5.7,
+  }
+  const learned = { categoryId: 'cheese', quantity: 0.15, unit: 'kg' as const }
+
+  it('applies category and amount to an item without a printed amount', () => {
+    expect(
+      learnedUpdate(
+        {
+          category_id: 'beef',
+          quantity: 0.4,
+          unit: 'kg',
+          quantity_source: 'estimated',
+          price: 2.29,
+        },
+        learned,
+        cheese,
+      ),
+    ).toEqual({
+      category_id: 'cheese',
+      quantity: 0.15,
+      unit: 'kg',
+      quantity_source: 'learned',
+      co2e_kg: 0.855,
+    })
+  })
+
+  it('keeps an amount printed on the receipt', () => {
+    expect(
+      learnedUpdate(
+        { category_id: null, quantity: 0.3, unit: 'kg', quantity_source: 'receipt', price: 3 },
+        learned,
+        cheese,
+      ),
+    ).toEqual({
+      category_id: 'cheese',
+      quantity: 0.3,
+      unit: 'kg',
+      quantity_source: 'receipt',
+      co2e_kg: 1.71,
+    })
+  })
+
+  it('only changes the category when nothing was learned about the amount', () => {
+    expect(
+      learnedUpdate(
+        { category_id: null, quantity: null, unit: null, quantity_source: null, price: 1 },
+        { categoryId: 'cheese', quantity: null, unit: null },
+        cheese,
+      ),
+    ).toEqual({
+      category_id: 'cheese',
+      quantity: null,
+      unit: null,
+      quantity_source: null,
+      co2e_kg: null,
+    })
+  })
+
+  it('returns null when the item already matches', () => {
+    expect(
+      learnedUpdate(
+        { category_id: 'cheese', quantity: 0.15, unit: 'kg', quantity_source: 'learned', price: 1 },
+        learned,
+        cheese,
+      ),
+    ).toBeNull()
   })
 })

@@ -131,7 +131,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     const mappings = normalizedNames.length
       ? await admin
           .from('category_mappings')
-          .select('normalized_name, category_id, user_id')
+          .select('normalized_name, category_id, user_id, quantity, unit')
           .in('normalized_name', normalizedNames)
           .or(`user_id.is.null,user_id.eq.${receipt.user_id}`)
       : { data: [], error: null }
