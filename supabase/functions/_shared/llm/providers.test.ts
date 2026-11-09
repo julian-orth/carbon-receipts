@@ -17,9 +17,14 @@ function fakeFetch(status: number, body: unknown) {
   )
 }
 
-function sentBody(fetchMock: ReturnType<typeof fakeFetch>): Record<string, unknown> {
-  const init = fetchMock.mock.calls[0]?.[1]
-  return JSON.parse(String(init?.body)) as Record<string, unknown>
+function sentBody(fetchMock: ReturnType<typeof fakeFetch>): unknown {
+  const body = fetchMock.mock.calls[0]?.[1]?.body
+  return typeof body === 'string' ? JSON.parse(body) : undefined
+}
+
+function requestUrl(input: RequestInfo | URL | undefined): string {
+  if (input === undefined) return ''
+  return input instanceof Request ? input.url : input.toString()
 }
 
 describe('createGeminiProvider', () => {
@@ -32,7 +37,7 @@ describe('createGeminiProvider', () => {
     await expect(gemini.generateJson(request)).resolves.toEqual({ items: [] })
 
     const [url, init] = fetchMock.mock.calls[0] ?? []
-    expect(String(url)).toContain('/models/gemini-test:generateContent')
+    expect(requestUrl(url)).toContain('/models/gemini-test:generateContent')
     expect(new Headers(init?.headers).get('x-goog-api-key')).toBe('key')
     expect(sentBody(fetchMock)).toMatchObject({
       generationConfig: { responseMimeType: 'application/json', temperature: 0 },

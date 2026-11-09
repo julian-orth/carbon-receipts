@@ -144,25 +144,14 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       userId: receipt.user_id,
     })
 
-    // Idempotent on retry: replace whatever an earlier attempt left behind.
-    const cleared = await admin.from('line_items').delete().eq('receipt_id', receipt.id)
-    if (cleared.error) throw cleared.error
-    const inserted = await admin
-      .from('line_items')
-      .insert(
-        lineItems.map((item) => ({ ...item, receipt_id: receipt.id, user_id: receipt.user_id })),
-      )
-    if (inserted.error) throw inserted.error
-
-    const updated = await admin
-      .from('receipts')
-      .update({
-        status: 'review',
-        merchant: extraction.merchant,
-        purchased_at: extraction.purchased_at,
-      })
-      .eq('id', receipt.id)
-    if (updated.error) throw updated.error
+    // One transaction: replaces earlier attempts' items and moves the receipt to `review`.
+    const completed = await admin.rpc('complete_receipt_processing', {
+      p_receipt_id: receipt.id,
+      p_items: lineItems,
+      p_merchant: extraction.merchant ?? undefined,
+      p_purchased_at: extraction.purchased_at ?? undefined,
+    })
+    if (completed.error) throw completed.error
 
     console.log(
       JSON.stringify({
@@ -216,16 +205,13 @@ Deno.serve(async (req) => {
   const body = bodySchema.safeParse(await req.json().catch(() => null))
   if (!body.success) return json(400, { error: 'Body must be { receipt_id: uuid }' })
 
-  // Atomic claim: only one invocation can move a receipt out of `pending`.
-  const { data: receipt, error: claimError } = await admin
-    .from('receipts')
-    .update({ status: 'processing', error: null })
-    .eq('id', body.data.receipt_id)
-    .eq('user_id', auth.user.id)
-    .eq('status', 'pending')
-    .select('id, user_id, file_path')
-    .maybeSingle()
+  // Atomic claim (pending, or stuck in processing after a crash). A second call gets 409.
+  const { data: claimed, error: claimError } = await admin.rpc('claim_receipt', {
+    p_receipt_id: body.data.receipt_id,
+    p_user_id: auth.user.id,
+  })
   if (claimError) return json(500, { error: 'Could not claim receipt' })
+  const receipt = claimed[0]
   if (!receipt) return json(409, { error: 'Receipt is not pending' })
 
   const work = processReceipt(admin, receipt)

@@ -370,6 +370,23 @@ export type Database = {
       }
     }
     Functions: {
+      claim_receipt: {
+        Args: { p_receipt_id: string; p_user_id: string }
+        Returns: {
+          file_path: string
+          id: string
+          user_id: string
+        }[]
+      }
+      complete_receipt_processing: {
+        Args: {
+          p_items: Json
+          p_merchant?: string
+          p_purchased_at?: string
+          p_receipt_id: string
+        }
+        Returns: undefined
+      }
       consume_ai_quota: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {

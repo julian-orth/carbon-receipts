@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   DEFAULT_TIMEOUT_MS,
   type FetchFn,
@@ -9,7 +10,13 @@ import {
   parseModelJson,
 } from './types.ts'
 
-type ChatCompletionResponse = { choices?: Array<{ message?: { content?: string | null } }> }
+const chatCompletionSchema = z.object({
+  choices: z
+    .array(
+      z.object({ message: z.object({ content: z.string().nullable().optional() }).optional() }),
+    )
+    .optional(),
+})
 
 /** Groq exposes an OpenAI-compatible chat completions API. */
 export function createGroqProvider(options: {
@@ -63,7 +70,10 @@ export function createGroqProvider(options: {
         })
       }
 
-      const body = (await response.json()) as ChatCompletionResponse
+      const parsed = chatCompletionSchema.safeParse(await response.json())
+      if (!parsed.success)
+        throw new LlmError('Groq returned an unexpected response', { provider: name })
+      const body = parsed.data
       const text = body.choices?.[0]?.message?.content
       if (!text) throw new LlmError('Groq returned no content', { provider: name })
       return parseModelJson(text, name)

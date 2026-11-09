@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import {
   AllProvidersFailedError,
   backoffDelay,
@@ -94,13 +94,8 @@ describe('generateWithFallback', () => {
     const error = await generateWithFallback([gemini, groq], request, identity, noWait).catch(
       (e: unknown) => e,
     )
-    expect(error).toBeInstanceOf(AllProvidersFailedError)
-    expect((error as AllProvidersFailedError).attempts.map((a) => a.provider)).toEqual([
-      'gemini',
-      'groq',
-      'groq',
-      'groq',
-    ])
+    assert(error instanceof AllProvidersFailedError)
+    expect(error.attempts.map((a) => a.provider)).toEqual(['gemini', 'groq', 'groq', 'groq'])
   })
 })
 

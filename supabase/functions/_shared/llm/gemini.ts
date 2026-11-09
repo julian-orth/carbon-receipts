@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   DEFAULT_TIMEOUT_MS,
   type FetchFn,
@@ -9,9 +10,18 @@ import {
   parseModelJson,
 } from './types.ts'
 
-type GeminiResponse = {
-  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>
-}
+const geminiResponseSchema = z.object({
+  candidates: z
+    .array(
+      z.object({
+        content: z
+          .object({ parts: z.array(z.object({ text: z.string().optional() })).optional() })
+          .optional(),
+        finishReason: z.string().optional(),
+      }),
+    )
+    .optional(),
+})
 
 export function createGeminiProvider(options: {
   apiKey: string
@@ -56,7 +66,10 @@ export function createGeminiProvider(options: {
         })
       }
 
-      const body = (await response.json()) as GeminiResponse
+      const parsed = geminiResponseSchema.safeParse(await response.json())
+      if (!parsed.success)
+        throw new LlmError('Gemini returned an unexpected response', { provider: name })
+      const body = parsed.data
       const text = body.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
       if (!text) {
         throw new LlmError(

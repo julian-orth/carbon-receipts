@@ -20,7 +20,7 @@ const optionalText = (max: number) =>
     z.string().trim().max(max).nullable(),
   )
 
-export const extractedItemSchema = z.object({
+const extractedItemSchema = z.object({
   raw_text: z.string().trim().min(1).max(200),
   quantity: looseNullableNumber.default(null),
   unit: optionalText(12).default(null),
@@ -33,7 +33,7 @@ export const extractedItemSchema = z.object({
   confidence: looseNumber.pipe(z.number().min(0).max(1)).catch(0),
 })
 
-export const receiptExtractionSchema = z.object({
+const receiptExtractionSchema = z.object({
   merchant: optionalText(120).default(null),
   purchased_at: z.iso.date().nullable().catch(null).default(null),
   items: z.array(extractedItemSchema).max(150),

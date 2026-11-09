@@ -1,4 +1,4 @@
-export type LlmImage = { mimeType: string; base64: string }
+type LlmImage = { mimeType: string; base64: string }
 
 export type LlmRequest = {
   system: string

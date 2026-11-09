@@ -1,5 +1,5 @@
 /** DB column `co2e_kg` is numeric(12, 4). */
-export const CO2E_DECIMALS = 4
+const CO2E_DECIMALS = 4
 
 /** Multiplies by 10^exponent on the decimal string, e.g. ("12.34565", 4) → 123456.5. */
 function shiftDecimal(value: number, exponent: number): number {

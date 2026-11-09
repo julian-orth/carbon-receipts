@@ -9,7 +9,7 @@ export type RetryOptions = {
   random?: () => number
 }
 
-export const DEFAULT_RETRY: RetryOptions = { retries: 2, baseDelayMs: 750, maxDelayMs: 6000 }
+const DEFAULT_RETRY: RetryOptions = { retries: 2, baseDelayMs: 750, maxDelayMs: 6000 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 

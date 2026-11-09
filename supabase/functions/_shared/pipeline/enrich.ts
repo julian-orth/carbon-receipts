@@ -21,7 +21,7 @@ export type MappingRef = {
   unit?: EmissionUnit | null
 }
 
-export type QuantitySource = 'receipt' | 'learned' | 'estimated' | 'user'
+type QuantitySource = 'receipt' | 'learned' | 'estimated' | 'user'
 
 export type LineItemDraft = {
   raw_text: string
@@ -36,7 +36,7 @@ export type LineItemDraft = {
 }
 
 /** Confidence for categories that come from a learned mapping (user or global). */
-export const MAPPING_CONFIDENCE = 1
+const MAPPING_CONFIDENCE = 1
 
 /** Deposit and empties are money, not products – dropped even if the model keeps them. */
 const DEPOSIT = /\b(pfand|leergut|mehrweg\s*pfand|einweg\s*pfand)/i
@@ -113,7 +113,7 @@ export function buildLineItems(input: {
 
       const learned =
         mapping?.quantity != null && mapping.unit != null
-          ? { quantity: Number(mapping.quantity), unit: mapping.unit }
+          ? { quantity: mapping.quantity, unit: mapping.unit }
           : null
       const amount = resolveAmount(item, learned)
       const result =
@@ -121,7 +121,7 @@ export function buildLineItems(input: {
           ? null
           : calculateCo2e(
               { quantity: amount?.quantity ?? null, unit: amount?.unit ?? null, price: item.price },
-              { unit: category.unit, co2ePerUnit: Number(category.co2e_per_unit) },
+              { unit: category.unit, co2ePerUnit: category.co2e_per_unit },
             )
 
       return {
