@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
 import { type LiveViewState, STEPS } from '@/features/processing/steps'
+import { UploadProgressDialog } from '@/features/processing/UploadProgressDialog'
 import { cn } from '@/lib/utils'
 import { ACCEPT_ATTRIBUTE, validateReceiptFile } from '../file-validation'
 import { useUploadReceipt } from '../queries'
@@ -82,9 +83,43 @@ export function ReceiptUpload() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  // The progress dialog opens the moment a file is chosen, not after the upload.
+  const [shown, setShown] = useState<{
+    fileName: string
+    previewUrl: string | null
+    dismissed: boolean
+  } | null>(null)
+  // Read in the upload's onSuccess, which closes over an older render.
+  const dismissedRef = useRef(false)
 
   if (auth.status !== 'authenticated') return null
   const userId = auth.user.id
+
+  function closeDialog() {
+    setShown((current) => {
+      if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl)
+      return null
+    })
+  }
+
+  function startUpload(file: File) {
+    upload.mutate(
+      { file, userId },
+      {
+        onSuccess: ({ receipt }) => {
+          const stillWatching = !dismissedRef.current
+          closeDialog()
+          // Closed while uploading: the receipt simply shows up in the list below.
+          if (!stillWatching) return
+          const state: LiveViewState = { fromUpload: true }
+          void navigate(`/receipts/${receipt.id}`, { state })
+        },
+        onSettled: () => {
+          if (inputRef.current) inputRef.current.value = ''
+        },
+      },
+    )
+  }
 
   function handleFile(file: File | undefined) {
     if (!file || upload.isPending) return
@@ -95,18 +130,14 @@ export function ReceiptUpload() {
       return
     }
     setValidationError(null)
-    upload.mutate(
-      { file, userId },
-      {
-        onSuccess: ({ receipt }) => {
-          const state: LiveViewState = { fromUpload: true }
-          void navigate(`/receipts/${receipt.id}`, { state })
-        },
-        onSettled: () => {
-          if (inputRef.current) inputRef.current.value = ''
-        },
-      },
-    )
+    closeDialog()
+    const previewUrl =
+      typeof URL.createObjectURL === 'function' && file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : null
+    dismissedRef.current = false
+    setShown({ fileName: file.name, previewUrl, dismissed: false })
+    startUpload(file)
   }
 
   function onChange(event: ChangeEvent<HTMLInputElement>) {
@@ -121,7 +152,7 @@ export function ReceiptUpload() {
 
   const error =
     validationError ??
-    (upload.isError ? 'Der Upload ist fehlgeschlagen. Bitte versuche es erneut.' : null)
+    (upload.isError && !shown ? 'Der Upload ist fehlgeschlagen. Bitte versuche es erneut.' : null)
 
   return (
     <section
@@ -182,6 +213,32 @@ export function ReceiptUpload() {
       </div>
 
       <HowItWorks />
+
+      {shown && !shown.dismissed && (upload.isPending || upload.isError) && (
+        <UploadProgressDialog
+          fileName={shown.fileName}
+          previewUrl={shown.previewUrl}
+          failed={upload.isError}
+          onRetry={() => {
+            if (upload.variables) startUpload(upload.variables.file)
+          }}
+          onChooseOther={() => {
+            closeDialog()
+            upload.reset()
+            inputRef.current?.click()
+          }}
+          onOpenChange={(open) => {
+            if (open) return
+            if (upload.isError) {
+              closeDialog()
+              upload.reset()
+            } else {
+              dismissedRef.current = true
+              setShown((current) => current && { ...current, dismissed: true })
+            }
+          }}
+        />
+      )}
 
       {error && (
         <Alert variant="destructive" role="alert" className="lg:col-span-2">

@@ -24,6 +24,15 @@ function jpeg(name = 'rewe.jpg') {
   return new File(['x'.repeat(100)], name, { type: 'image/jpeg' })
 }
 
+/** A promise the test resolves by hand. */
+function deferred<T>() {
+  const handle: { resolve?: (value: T) => void } = {}
+  const promise = new Promise<T>((done) => {
+    handle.resolve = done
+  })
+  return { promise, resolve: (value: T) => handle.resolve?.(value) }
+}
+
 describe('ReceiptsPage', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -101,14 +110,18 @@ describe('ReceiptsPage', () => {
   it('uploads a valid file and opens the receipt with its progress', async () => {
     mockedApi.fetchReceipts.mockResolvedValue([])
     const receipt = receiptFixture({ status: 'processing', processing_step: 'reading' })
-    mockedApi.uploadReceipt.mockResolvedValue({ receipt, processingStarted: true })
     const user = userEvent.setup()
     const { router } = renderPage()
     await screen.findByText('Noch keine Belege')
 
+    const upload = deferred<Awaited<ReturnType<typeof api.uploadReceipt>>>()
+    mockedApi.uploadReceipt.mockReturnValue(upload.promise)
     const file = jpeg()
     await user.upload(screen.getByLabelText(/Foto auswählen/), file)
 
+    // The progress dialog is there before the upload has finished.
+    expect(await screen.findByRole('dialog', { name: 'Foto wird hochgeladen …' })).toBeVisible()
+    upload.resolve({ receipt, processingStarted: true })
     await waitFor(() =>
       expect(mockedApi.uploadReceipt).toHaveBeenCalledWith(
         { file, userId: testUser.id },
@@ -143,7 +156,13 @@ describe('ReceiptsPage', () => {
 
     await user.upload(screen.getByLabelText(/Foto auswählen/), jpeg())
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Upload ist fehlgeschlagen/)
+    const dialog = await screen.findByRole('dialog', { name: 'Upload fehlgeschlagen' })
+    mockedApi.uploadReceipt.mockResolvedValue({
+      receipt: receiptFixture({ status: 'processing' }),
+      processingStarted: true,
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Erneut versuchen' }))
+    await waitFor(() => expect(mockedApi.uploadReceipt).toHaveBeenCalledTimes(2))
   })
 
   it('retries a failed receipt and shows the error reason', async () => {
