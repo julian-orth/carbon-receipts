@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  averageCompletedMonth,
   buildMonthSeries,
   compareCompletedMonths,
   type FactorRef,
   goalProgress,
   type HotspotRow,
   lastMonths,
+  projectMonth,
+  receiptStats,
   sumByGroup,
   suggestAlternatives,
 } from './dashboard-logic'
@@ -88,6 +91,58 @@ describe('compareCompletedMonths', () => {
 
   it('needs two complete months', () => {
     expect(compareCompletedMonths(buildMonthSeries([], today, 2))).toBeNull()
+  })
+})
+
+const point = (totalKg: number, isCurrent = false) => ({
+  month: 'm',
+  label: 'l',
+  totalKg,
+  isCurrent,
+})
+const receipt = (id: string, status: string, purchased_at: string | null) => ({
+  id,
+  status,
+  purchased_at,
+  created_at: '2026-11-01T10:00:00Z',
+})
+
+describe('projectMonth', () => {
+  it('extrapolates the running month from day 7 on', () => {
+    // 9 Nov: 18 kg in 9 days → 2 kg/day × 30 days
+    expect(projectMonth(18, new Date(2026, 10, 9))).toBe(60)
+    expect(projectMonth(18, new Date(2026, 10, 6))).toBeNull()
+    expect(projectMonth(0, new Date(2026, 10, 20))).toBeNull()
+  })
+})
+
+describe('averageCompletedMonth', () => {
+  it('ignores the running month', () => {
+    expect(averageCompletedMonth([point(10), point(20), point(3, true)])).toBe(15)
+    expect(averageCompletedMonth([point(3, true)])).toBeNull()
+  })
+})
+
+describe('receiptStats', () => {
+  it('counts confirmed receipts in the range with their items and average', () => {
+    const totals = new Map([
+      ['a', { itemCount: 4, co2eKg: 6 }],
+      ['b', { itemCount: 2, co2eKg: 2 }],
+      ['old', { itemCount: 9, co2eKg: 90 }],
+    ])
+    expect(
+      receiptStats(
+        [
+          receipt('a', 'done', '2026-10-03'),
+          receipt('b', 'done', null),
+          receipt('open', 'review', '2026-10-04'),
+          receipt('old', 'done', '2026-01-02'),
+        ],
+        totals,
+        '2026-06-01',
+      ),
+    ).toEqual({ count: 2, items: 6, averageKg: 4 })
+    expect(receiptStats([], totals, '2026-06-01').averageKg).toBeNull()
   })
 })
 
@@ -175,7 +230,9 @@ describe('suggestAlternatives', () => {
       factors,
     )
     expect(suggestion).toEqual({
+      fromSlug: 'ground-beef',
       fromLabel: 'Rinderhackfleisch',
+      toSlug: 'veggie-patty',
       toLabel: 'Veggie-Burger & Bratlinge',
       unit: 'kg',
       savingPerUnit: 8.1,

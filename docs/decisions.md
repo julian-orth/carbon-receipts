@@ -331,3 +331,14 @@ paint – an external file because the CSP forbids inline scripts. The dark pale
 not flipped: ink background, lime as primary action, the receipt paper stays light. Chart bars
 use one green ramp per mode (validated: light end ≥ 2:1 on the card surface in both modes).
 Status colours moved from hex literals to tokens (`success-soft`, `danger-*`).
+
+## 027 – Dashboard widgets rethought
+
+The old dashboard was nine equal cards. Now one hero (ink in both themes): the running month,
+a projection to month end (only from day 7 – earlier it is noise) and the last complete month
+against the one before, next to a goal ring with a text status; the goal is edited in a dialog
+that suggests the average of the completed months. Beside it the next step (receipts waiting
+for review, otherwise an upload) and key figures of the range from the receipts already in the
+cache (no new SQL). Trend in one green ramp with a swatch legend; areas, hotspots and swaps use
+the category icons and group colours of the picker, so identity never relies on bar colour.
+"Alternativen" became "Sparpotenzial" with the summed saving for what was actually bought.

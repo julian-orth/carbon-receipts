@@ -1,30 +1,36 @@
-import type { ReactNode } from 'react'
-import { useId } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { type ReactNode, useId } from 'react'
+import { cn } from '@/lib/utils'
 
+/** A titled dashboard widget; `aside` sits right of the title (a key figure or a link). */
 export function DashboardCard({
   title,
   description,
+  aside,
   children,
   className,
 }: {
   title: string
   description?: string
+  aside?: ReactNode
   children: ReactNode
   className?: string
 }) {
   const id = useId()
   return (
-    <section aria-labelledby={id} className={className}>
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle>
-            <h2 id={id}>{title}</h2>
-          </CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
-        </CardHeader>
-        <CardContent>{children}</CardContent>
-      </Card>
+    <section
+      aria-labelledby={id}
+      className={cn('flex flex-col gap-5 rounded-3xl border bg-card p-5 sm:p-6', className)}
+    >
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <div className="min-w-0">
+          <h2 id={id} className="text-base font-semibold tracking-tight">
+            {title}
+          </h2>
+          {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
+        </div>
+        {aside}
+      </header>
+      <div className="min-w-0 flex-1">{children}</div>
     </section>
   )
 }

@@ -63,6 +63,58 @@ export function buildMonthSeries(
   }))
 }
 
+/**
+ * Where the running month will end if it goes on like this. Too early in the month the
+ * extrapolation is noise, so there is none before day 7 (or without any data).
+ */
+export function projectMonth(currentKg: number, today: Date): number | null {
+  const day = today.getDate()
+  if (day < 7 || currentKg <= 0) return null
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  return roundCo2e((currentKg / day) * daysInMonth)
+}
+
+/** Average of the completed months in the series (the running one would pull it down). */
+export function averageCompletedMonth(series: readonly MonthPoint[]): number | null {
+  const completed = series.filter((point) => !point.isCurrent)
+  if (completed.length === 0) return null
+  return roundCo2e(completed.reduce((sum, point) => sum + point.totalKg, 0) / completed.length)
+}
+
+export type ReceiptStatsInput = {
+  id: string
+  status: string
+  purchased_at: string | null
+  created_at: string
+}
+
+export type ReceiptStats = { count: number; items: number; averageKg: number | null }
+
+/** Confirmed receipts in the range (by purchase date, upload date as fallback). */
+export function receiptStats(
+  receipts: readonly ReceiptStatsInput[],
+  totals: ReadonlyMap<string, { itemCount: number; co2eKg: number }>,
+  fromMonth: string,
+): ReceiptStats {
+  const inRange = receipts.filter(
+    (receipt) =>
+      receipt.status === 'done' &&
+      (receipt.purchased_at ?? receipt.created_at.slice(0, 10)) >= fromMonth,
+  )
+  let items = 0
+  let kg = 0
+  for (const receipt of inRange) {
+    const total = totals.get(receipt.id)
+    items += total?.itemCount ?? 0
+    kg += total?.co2eKg ?? 0
+  }
+  return {
+    count: inRange.length,
+    items,
+    averageKg: inRange.length > 0 ? roundCo2e(kg / inRange.length) : null,
+  }
+}
+
 export type GroupTotal = { group: string; totalKg: number; share: number }
 
 export function sumByGroup(rows: readonly GroupRow[], fromMonth: string): GroupTotal[] {
@@ -122,7 +174,10 @@ export function goalProgress(currentKg: number, targetKg: number): GoalProgress 
 }
 
 export type AlternativeSuggestion = {
+  fromSlug: string
   fromLabel: string
+  /** Category of the alternative; null for a product with its own factor. */
+  toSlug: string | null
   toLabel: string
   unit: EmissionUnit
   /** kg CO2e saved per unit (kg / l / piece) */
@@ -183,7 +238,9 @@ export function suggestAlternatives(
         : null
 
     const suggestion: AlternativeSuggestion = {
+      fromSlug: original.slug,
       fromLabel: original.label,
+      toSlug: targetDef.kind === 'category' ? targetDef.slug : null,
       toLabel: target.label,
       unit: original.unit,
       savingPerUnit,

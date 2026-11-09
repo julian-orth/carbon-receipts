@@ -49,5 +49,5 @@ test('magic link → upload → AI extraction → review → dashboard', async (
 
   await page.getByRole('link', { name: 'Übersicht', exact: true }).first().click()
   // 4.6 + 1.4 + 0.72 + 0.3 (mock items) + 1.14 (corrected) = 8.16 kg
-  await expect(page.getByText('Dieser Monat (laufend)').locator('..')).toContainText('8,16 kg CO₂e')
+  await expect(page.getByText('Summe, 6 Monate').locator('..')).toContainText('8,16 kg CO₂e')
 })

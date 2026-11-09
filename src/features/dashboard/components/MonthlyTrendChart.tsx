@@ -24,7 +24,7 @@ function TrendTooltip({ active, payload }: TooltipContentProps) {
   const point: unknown = payload?.[0]?.payload
   if (!active || !isMonthPoint(point)) return null
   return (
-    <div className="rounded-md border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+    <div className="rounded-xl border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-[0_8px_24px_rgba(0,0,0,.12)]">
       <p className="font-medium">
         {point.label}
         {point.isCurrent && ' (laufend)'}
@@ -43,16 +43,16 @@ export function MonthlyTrendChart({
 }) {
   return (
     <figure>
-      <div className="h-64" aria-hidden>
+      <div className="h-64 sm:h-72" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             // Decorative for assistive tech: the table view below is the accessible version.
             accessibilityLayer={false}
             data={series}
             margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
-            barCategoryGap="30%"
+            barCategoryGap="26%"
           >
-            <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
+            <CartesianGrid vertical={false} stroke="var(--viz-grid)" strokeDasharray="2 4" />
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -67,7 +67,7 @@ export function MonthlyTrendChart({
               width={44}
               tickFormatter={(value: number) => value.toLocaleString('de-DE')}
             />
-            <Tooltip content={TrendTooltip} cursor={{ fill: 'var(--muted)' }} />
+            <Tooltip content={TrendTooltip} cursor={{ fill: 'var(--muted)', radius: 8 }} />
             {goalKg !== null && (
               <ReferenceLine
                 y={goalKg}
@@ -81,7 +81,7 @@ export function MonthlyTrendChart({
                 }}
               />
             )}
-            <Bar dataKey="totalKg" radius={[4, 4, 0, 0]} maxBarSize={36}>
+            <Bar dataKey="totalKg" radius={[6, 6, 0, 0]} maxBarSize={48}>
               {series.map((point) => (
                 <Cell
                   key={point.month}
@@ -93,9 +93,21 @@ export function MonthlyTrendChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <figcaption className="mt-2 text-xs text-muted-foreground">
-        kg CO₂e pro Monat; der laufende Monat ist heller dargestellt.
-        {goalKg !== null && ' Gestrichelt: dein Monatsziel.'}
+      <figcaption className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="size-2.5 rounded-sm bg-viz-bar" />
+          kg CO₂e pro Monat
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="size-2.5 rounded-sm bg-viz-bar-muted" />
+          laufender Monat
+        </span>
+        {goalKg !== null && (
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className="w-3 border-t-2 border-dashed border-viz-goal" />
+            Monatsziel
+          </span>
+        )}
       </figcaption>
       <ChartTable
         caption="CO₂e pro Monat"

@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -7,28 +7,29 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useEmissionCategories } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
 import { AlternativesList } from './components/AlternativesList'
+import { useReceipts, useReceiptTotals } from '@/features/receipts/queries'
 import { DashboardCard } from './components/DashboardCard'
-import { GoalCard } from './components/GoalCard'
 import { GroupBreakdownChart } from './components/GroupBreakdownChart'
+import { HeroCard } from './components/HeroCard'
 import { HotspotList } from './components/HotspotList'
 import { MonthlyTrendChart } from './components/MonthlyTrendChart'
+import { NextStepCard } from './components/NextStepCard'
 import { RangeFilter } from './components/RangeFilter'
-import { StatTile } from './components/StatTile'
+import { RangeStats } from './components/RangeStats'
 import {
+  averageCompletedMonth,
   buildMonthSeries,
   compareCompletedMonths,
   lastMonths,
+  projectMonth,
   type RangeMonths,
+  receiptStats,
   sumByGroup,
   suggestAlternatives,
 } from './dashboard-logic'
 import { useGroupTotals, useHotspots, useMonthlyGoal, useMonthlyTotals } from './queries'
 
-const percent = new Intl.NumberFormat('de-DE', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-  signDisplay: 'always',
-})
+const monthName = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' })
 
 export function DashboardPage({ today: todayProp }: { today?: Date }) {
   // Fixed for the lifetime of the page; tests pass a date.
@@ -41,17 +42,23 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const hotspots = useHotspots(fromMonth)
   const goal = useMonthlyGoal()
   const categories = useEmissionCategories()
+  const receipts = useReceipts()
+  const totalsByReceipt = useReceiptTotals()
+  const categoriesBySlug = useMemo(
+    () => new Map((categories.data ?? []).map((category) => [category.slug, category])),
+    [categories.data],
+  )
 
   const series = useMemo(
     () => buildMonthSeries(totals.data ?? [], today, range),
     [totals.data, today, range],
   )
-  const queries = [totals, groups, hotspots, goal, categories]
+  const queries = [totals, groups, hotspots, goal, categories, receipts, totalsByReceipt]
 
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <title>Übersicht · Carbon Receipts</title>
-      <div>
+      <div className="space-y-1">
         <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-[44px] sm:leading-[1.05]">
           Übersicht
         </h1>
@@ -65,11 +72,11 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
     return (
       <div className="space-y-6">
         {header}
-        <output aria-label="Übersicht wird geladen" className="grid gap-4 sm:grid-cols-3">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-72 sm:col-span-3" />
+        <output aria-label="Übersicht wird geladen" className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+          <Skeleton className="h-64 rounded-3xl lg:col-span-8" />
+          <Skeleton className="h-64 rounded-3xl lg:col-span-4" />
+          <Skeleton className="h-80 rounded-3xl lg:col-span-8" />
+          <Skeleton className="h-80 rounded-3xl lg:col-span-4" />
         </output>
       </div>
     )
@@ -99,20 +106,27 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const rangeTotal = series.reduce((sum, point) => sum + point.totalKg, 0)
   const comparison = compareCompletedMonths(series)
   const currentKg = series.at(-1)?.totalKg ?? 0
+  const averageKg = averageCompletedMonth(series)
   const groupTotals = sumByGroup(groups.data ?? [], fromMonth)
   const alternatives = suggestAlternatives(hotspots.data ?? [], categories.data ?? [])
   const topHotspots = (hotspots.data ?? []).slice(0, 5)
   const goalKg = goal.data ? goal.data.target_co2e_kg : null
+  const stats = receiptStats(receipts.data ?? [], totalsByReceipt.data ?? new Map(), fromMonth)
+  const open = (receipts.data ?? []).filter((receipt) => receipt.status === 'review')
+  const savingKg = alternatives.reduce((sum, s) => sum + (s.savingKg ?? 0), 0)
 
   if (rangeTotal === 0 && (hotspots.data ?? []).length === 0) {
     return (
       <div className="space-y-6">
         {header}
-        <div className="flex flex-col items-center gap-3 rounded-xl border px-6 py-12 text-center">
+        {open.length > 0 && (
+          <NextStepCard openCount={open.length} firstOpenId={open[0]?.id ?? null} />
+        )}
+        <div className="flex flex-col items-center gap-3 rounded-3xl border bg-card px-6 py-14 text-center">
           <p className="text-lg font-medium">Noch keine bestätigten Belege in diesem Zeitraum</p>
           <p className="max-w-md text-muted-foreground">
             Lade ein Foto deines Kassenbons hoch und bestätige die erkannten Positionen – dann
-            erscheinen hier Verlauf, Hotspots und Alternativen.
+            erscheinen hier Verlauf, Hotspots und Sparpotenzial.
           </p>
           <Button asChild>
             <Link to="/receipts">
@@ -125,54 +139,74 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
     )
   }
 
-  const DeltaIcon = comparison && comparison.deltaKg > 0 ? ArrowUpRight : ArrowDownRight
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {header}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Dieser Monat (laufend)" value={formatCo2e(currentKg)} />
-        <StatTile
-          label={comparison ? `Vormonat (${comparison.month.label})` : 'Vormonat'}
-          value={formatCo2e(comparison?.month.totalKg ?? 0)}
-          detail={
-            comparison && comparison.deltaRatio !== null ? (
-              <span className="inline-flex items-center gap-1">
-                <DeltaIcon aria-hidden className="size-4" />
-                {percent.format(comparison.deltaRatio)} ggü. {comparison.previous.label}
-              </span>
-            ) : null
-          }
-        />
-        <StatTile label={`Summe, letzte ${range} Monate`} value={formatCo2e(rangeTotal)} />
-      </div>
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+        <div className="flex lg:col-span-8 [&>*]:flex-1">
+          <HeroCard
+            monthLabel={monthName.format(today)}
+            currentKg={currentKg}
+            projectedKg={projectMonth(currentKg, today)}
+            comparison={comparison}
+            goal={goal.data ?? null}
+            averageKg={averageKg}
+          />
+        </div>
+        <div className="flex flex-col gap-5 sm:gap-6 lg:col-span-4">
+          <NextStepCard openCount={open.length} firstOpenId={open[0]?.id ?? null} />
+          <RangeStats range={range} totalKg={rangeTotal} stats={stats} />
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <DashboardCard title="Verlauf" description="CO₂e pro Monat" className="lg:col-span-2">
+        <DashboardCard
+          title="Verlauf"
+          description="CO₂e pro Monat aus bestätigten Belegen"
+          aside={
+            averageKg !== null && (
+              <p className="text-sm sm:text-right">
+                <span className="block text-xs text-muted-foreground">Ø pro Monat</span>
+                <span className="font-semibold">{formatCo2e(averageKg)}</span>
+              </p>
+            )
+          }
+          className="lg:col-span-8"
+        >
           <MonthlyTrendChart series={series} goalKg={goalKg} />
         </DashboardCard>
         <DashboardCard
-          title="Monatsziel"
-          description="Wie viel CO₂e willst du pro Monat höchstens verursachen?"
+          title="Nach Bereich"
+          description={`Letzte ${range} Monate`}
+          className="lg:col-span-4"
         >
-          <GoalCard goal={goal.data ?? null} currentKg={currentKg} />
-        </DashboardCard>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <DashboardCard title="Nach Bereich" description={`Letzte ${range} Monate`}>
           {groupTotals.length > 0 ? (
             <GroupBreakdownChart groups={groupTotals} />
           ) : (
             <p className="text-sm text-muted-foreground">Keine Daten im Zeitraum.</p>
           )}
         </DashboardCard>
-        <DashboardCard title="Hotspots" description="Deine größten einzelnen Posten">
-          <HotspotList hotspots={topHotspots} />
+
+        <DashboardCard
+          title="Hotspots"
+          description="Deine größten einzelnen Posten"
+          className="lg:col-span-5"
+        >
+          <HotspotList hotspots={topHotspots} categoriesBySlug={categoriesBySlug} />
         </DashboardCard>
-        <DashboardCard title="Alternativen" description="Gleichwertiger Tausch mit weniger CO₂e">
-          <AlternativesList suggestions={alternatives} />
+        <DashboardCard
+          title="Sparpotenzial"
+          description="Gleichwertiger Tausch mit weniger CO₂e, gerechnet auf deinen Einkauf"
+          aside={
+            savingKg > 0 && (
+              <p className="text-sm sm:text-right">
+                <span className="block text-xs text-muted-foreground">zusammen bis zu</span>
+                <span className="font-semibold text-success">−{formatCo2e(savingKg)}</span>
+              </p>
+            )
+          }
+          className="lg:col-span-7"
+        >
+          <AlternativesList suggestions={alternatives} categoriesBySlug={categoriesBySlug} />
         </DashboardCard>
       </div>
     </div>
