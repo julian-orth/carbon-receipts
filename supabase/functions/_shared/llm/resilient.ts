@@ -39,8 +39,10 @@ export class AllProvidersFailedError extends Error {
 
 /**
  * Runs the request against each provider in order. Retryable errors (429/5xx)
- * are retried with backoff; anything else – including output that fails
- * `parse` (e.g. Zod validation) – moves on to the next provider.
+ * are retried with backoff – except 503 "overloaded": a model under high demand stays
+ * overloaded for minutes, so waiting for it only delays the fallback. Anything else –
+ * including output that fails `parse` (e.g. Zod validation) – moves on to the next
+ * provider. `attempts` lists the failures before the success (for logging).
  */
 export async function generateWithFallback<T>(
   providers: readonly LlmProvider[],
@@ -48,7 +50,7 @@ export async function generateWithFallback<T>(
   parse: (raw: unknown) => T,
   options: RetryOptions = DEFAULT_RETRY,
   hooks: FallbackHooks = {},
-): Promise<{ value: T; provider: string }> {
+): Promise<{ value: T; provider: string; attempts: ProviderAttempt[] }> {
   const sleep = options.sleep ?? defaultSleep
   const attempts: ProviderAttempt[] = []
 
@@ -57,11 +59,11 @@ export async function generateWithFallback<T>(
     for (let attempt = 0; attempt <= options.retries; attempt++) {
       try {
         const raw = await provider.generateJson(request)
-        return { value: parse(raw), provider: provider.name }
+        return { value: parse(raw), provider: provider.name, attempts }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         attempts.push({ provider: provider.name, attempt, error: message })
-        const retryable = error instanceof LlmError && error.retryable
+        const retryable = error instanceof LlmError && error.retryable && error.status !== 503
         if (!retryable || attempt === options.retries) break
         await sleep(backoffDelay(attempt, options))
       }

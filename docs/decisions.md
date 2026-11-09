@@ -303,3 +303,12 @@ Supersedes the full-screen live view of 021 (layout only; honest progress and pa
   Suggestions come from the receipt text (label words + a small keyword list such as
   Gouda → Käse); compound words only match at their start or end ("tomaten" ≠ "mate").
   Intensity is shown for kg/litre factors only – per-piece factors are not comparable.
+
+## 024 – Skip overloaded models instead of retrying them
+
+`gemini-3.8-flash` answered 503 "high demand" on almost every request (free tier, Nov 2026);
+three backoff retries cost ~20–30 s before Groq took over, every time. A 503 now moves on to the
+next provider immediately (429 and other 5xx are still retried), Gemini gets a 20 s timeout and
+the default model is `gemini-3.5-flash`. `GEMINI_MODEL` accepts a list, so a newer model can be
+tried first without making it the only Gemini option. Failed attempts before a successful
+fallback are logged (`llm_fallback`) – before, they were invisible.

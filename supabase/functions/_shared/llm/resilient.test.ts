@@ -50,6 +50,7 @@ describe('generateWithFallback', () => {
     await expect(generateWithFallback([gemini, groq], request, identity, noWait)).resolves.toEqual({
       value: { ok: 1 },
       provider: 'gemini',
+      attempts: [],
     })
     expect(groq.calls).toBe(0)
   })
@@ -67,8 +68,27 @@ describe('generateWithFallback', () => {
     const gemini = provider('gemini', rateLimited('gemini'))
     const groq = provider('groq', { ok: 2 })
     const result = await generateWithFallback([gemini, groq], request, identity, noWait)
-    expect(result).toEqual({ value: { ok: 2 }, provider: 'groq' })
+    expect(result).toMatchObject({ value: { ok: 2 }, provider: 'groq' })
+    expect(result.attempts.map((a) => `${a.provider}#${a.attempt}`)).toEqual([
+      'gemini#0',
+      'gemini#1',
+      'gemini#2',
+    ])
     expect(gemini.calls).toBe(3)
+  })
+
+  it('skips an overloaded model (503) right away instead of waiting for it', async () => {
+    const sleep = vi.fn<(ms: number) => Promise<void>>(() => Promise.resolve())
+    const overloaded = new LlmError('503', { provider: 'gemini', status: 503, retryable: true })
+    const gemini = provider('gemini', overloaded)
+    const groq = provider('groq', { ok: 2 })
+    const result = await generateWithFallback([gemini, groq], request, identity, {
+      ...noWait,
+      sleep,
+    })
+    expect(result.provider).toBe('groq')
+    expect(gemini.calls).toBe(1)
+    expect(sleep).not.toHaveBeenCalled()
   })
 
   it('does not retry non-retryable errors', async () => {

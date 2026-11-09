@@ -25,7 +25,10 @@ type Admin = SupabaseClient<Database>
 type ProcessingStep = Database['public']['Enums']['processing_step']
 type ClaimedReceipt = { id: string; user_id: string; file_path: string | null }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
+// gemini-3.8-flash answers 503 "high demand" on the free tier most of the time (Nov 2026).
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'
+/** Shorter than the default: a slow Gemini must leave time for the fallback. */
+const GEMINI_TIMEOUT_MS = 20_000
 const DEFAULT_GROQ_MODEL = 'qwen/qwen3.8-27b'
 
 const corsHeaders = {
@@ -64,12 +67,14 @@ function createProviders(): LlmProvider[] {
     if (name === 'gemini') {
       const apiKey = Deno.env.get('GEMINI_API_KEY')
       if (!apiKey) return []
-      return [
-        createGeminiProvider({
-          apiKey,
-          model: Deno.env.get('GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL,
-        }),
-      ]
+      // GEMINI_MODEL may list several models, tried in order: "gemini-3.5-flash,gemini-3.8-flash".
+      const models = (Deno.env.get('GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL)
+        .split(',')
+        .map((model) => model.trim())
+        .filter(Boolean)
+      return models.map((model) =>
+        createGeminiProvider({ apiKey, model, timeoutMs: GEMINI_TIMEOUT_MS }),
+      )
     }
     if (name === 'groq') {
       const apiKey = Deno.env.get('GROQ_API_KEY')
@@ -129,13 +134,24 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       mimeType: file.data.type || 'image/jpeg',
       base64: bytesToBase64(bytes),
     })
-    const { value: extraction, provider } = await generateWithFallback(
-      providers,
-      request,
-      parseReceiptExtraction,
-      undefined,
-      { onProviderStart: (name) => reportProgress(admin, receipt.id, { ai_provider: name }) },
-    )
+    const {
+      value: extraction,
+      provider,
+      attempts,
+    } = await generateWithFallback(providers, request, parseReceiptExtraction, undefined, {
+      onProviderStart: (name) => reportProgress(admin, receipt.id, { ai_provider: name }),
+    })
+    if (attempts.length > 0) {
+      // A fallback that works is invisible to the user – keep it visible in the logs.
+      console.warn(
+        JSON.stringify({
+          event: 'llm_fallback',
+          receipt_id: receipt.id,
+          provider,
+          failed: attempts,
+        }),
+      )
+    }
     // The response passed the Zod schema inside generateWithFallback; now the content checks.
     await reportProgress(admin, receipt.id, { processing_step: 'validating' })
     if (extraction.items.length === 0) {
