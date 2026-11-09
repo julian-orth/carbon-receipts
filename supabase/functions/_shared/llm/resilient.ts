@@ -21,6 +21,11 @@ export function backoffDelay(attempt: number, options: RetryOptions): number {
 
 export type ProviderAttempt = { provider: string; attempt: number; error: string }
 
+export type FallbackHooks = {
+  /** Called once before a provider's first attempt (e.g. to show a fallback in the UI). */
+  onProviderStart?: (provider: string) => void | Promise<void>
+}
+
 export class AllProvidersFailedError extends Error {
   readonly attempts: ProviderAttempt[]
   constructor(attempts: ProviderAttempt[]) {
@@ -42,11 +47,13 @@ export async function generateWithFallback<T>(
   request: LlmRequest,
   parse: (raw: unknown) => T,
   options: RetryOptions = DEFAULT_RETRY,
+  hooks: FallbackHooks = {},
 ): Promise<{ value: T; provider: string }> {
   const sleep = options.sleep ?? defaultSleep
   const attempts: ProviderAttempt[] = []
 
   for (const provider of providers) {
+    await hooks.onProviderStart?.(provider.name)
     for (let attempt = 0; attempt <= options.retries; attempt++) {
       try {
         const raw = await provider.generateJson(request)

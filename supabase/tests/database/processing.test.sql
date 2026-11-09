@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(14);
 
 insert into auth.users (id, email) values
   ('77777777-7777-7777-7777-777777777777', 'proc@example.com'),
@@ -41,6 +41,15 @@ select is(
   0, 'nobody can claim another user''s receipt'
 );
 
+select results_eq(
+  $$ select processing_step::text, ai_provider from public.receipts where id = 'eeeeeeee-0000-0000-0000-000000000001' $$,
+  $$ values ('reading', null::text) $$,
+  'claiming starts at the reading step without a provider'
+);
+
+update public.receipts set processing_step = 'matching', ai_provider = 'groq'
+where id = 'eeeeeeee-0000-0000-0000-000000000001';
+
 select lives_ok(
   $$ select public.complete_receipt_processing(
        'eeeeeeee-0000-0000-0000-000000000001',
@@ -56,6 +65,11 @@ select results_eq(
   $$ values ('review', 'REWE', 2) $$,
   'receipt moved to review with its line items'
 );
+select results_eq(
+  $$ select processing_step::text, ai_provider from public.receipts where id = 'eeeeeeee-0000-0000-0000-000000000001' $$,
+  $$ values (null::text, 'groq') $$,
+  'completion clears the step and keeps the provider that read the receipt'
+);
 select throws_ok(
   $$ select public.complete_receipt_processing('eeeeeeee-0000-0000-0000-000000000001', '[]'::jsonb) $$,
   '23514', null,
@@ -68,6 +82,21 @@ select throws_ok(
   $$ select public.claim_receipt('eeeeeeee-0000-0000-0000-000000000002', '77777777-7777-7777-7777-777777777777') $$,
   '42501', null,
   'users cannot call the processing functions'
+);
+
+select throws_ok(
+  $$ update public.receipts set processing_step = 'calculating' where id = 'eeeeeeee-0000-0000-0000-000000000002' $$,
+  '42501', null,
+  'users cannot write the processing step'
+);
+select throws_ok(
+  $$ update public.receipts set ai_provider = 'fake' where id = 'eeeeeeee-0000-0000-0000-000000000002' $$,
+  '42501', null,
+  'users cannot write the provider'
+);
+select lives_ok(
+  $$ select processing_step, ai_provider from public.receipts $$,
+  'users can read the progress columns'
 );
 
 select * from finish();

@@ -22,6 +22,7 @@ import { parseReceiptExtraction } from '../_shared/pipeline/schema.ts'
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined
 
 type Admin = SupabaseClient<Database>
+type ProcessingStep = Database['public']['Enums']['processing_step']
 type ClaimedReceipt = { id: string; user_id: string; file_path: string | null }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
@@ -82,6 +83,23 @@ function createProviders(): LlmProvider[] {
   })
 }
 
+/**
+ * Progress for the live UI (via Realtime). Best effort: a failed progress update
+ * is logged but never fails the analysis itself.
+ */
+async function reportProgress(
+  admin: Admin,
+  receiptId: string,
+  progress: { processing_step?: ProcessingStep; ai_provider?: string },
+): Promise<void> {
+  const { error } = await admin
+    .from('receipts')
+    .update(progress)
+    .eq('id', receiptId)
+    .eq('status', 'processing')
+  if (error) console.warn('Could not report progress', error.message)
+}
+
 async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<void> {
   const startedAt = Date.now()
   try {
@@ -115,13 +133,18 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       providers,
       request,
       parseReceiptExtraction,
+      undefined,
+      { onProviderStart: (name) => reportProgress(admin, receipt.id, { ai_provider: name }) },
     )
+    // The response passed the Zod schema inside generateWithFallback; now the content checks.
+    await reportProgress(admin, receipt.id, { processing_step: 'validating' })
     if (extraction.items.length === 0) {
       throw new UserFacingError(
         'Auf dem Foto wurden keine Positionen erkannt. Ist der Bon gut lesbar?',
       )
     }
 
+    await reportProgress(admin, receipt.id, { processing_step: 'matching' })
     // Learned mappings (user first, then global) override the model's category.
     const normalizedNames = [
       ...new Set(
@@ -137,6 +160,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       : { data: [], error: null }
     if (mappings.error) throw mappings.error
 
+    await reportProgress(admin, receipt.id, { processing_step: 'calculating' })
     const lineItems = buildLineItems({
       items: extraction.items,
       categories: categories.data,

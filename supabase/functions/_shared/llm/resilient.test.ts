@@ -97,6 +97,19 @@ describe('generateWithFallback', () => {
     assert(error instanceof AllProvidersFailedError)
     expect(error.attempts.map((a) => a.provider)).toEqual(['gemini', 'groq', 'groq', 'groq'])
   })
+
+  it('announces each provider once, before its first attempt', async () => {
+    const gemini = provider('gemini', rateLimited('gemini'))
+    const groq = provider('groq', { ok: true })
+    const started: string[] = []
+    await generateWithFallback([gemini, groq], request, identity, noWait, {
+      onProviderStart: (name) => {
+        started.push(`${name}@${gemini.calls + groq.calls}`)
+      },
+    })
+    // gemini before any call, groq after gemini's three attempts
+    expect(started).toEqual(['gemini@0', 'groq@3'])
+  })
 })
 
 describe('backoffDelay', () => {

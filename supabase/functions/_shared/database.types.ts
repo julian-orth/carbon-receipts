@@ -257,12 +257,14 @@ export type Database = {
       }
       receipts: {
         Row: {
+          ai_provider: string | null
           created_at: string
           error: string | null
           file_path: string | null
           id: string
           merchant: string | null
           original_filename: string | null
+          processing_step: Database['public']['Enums']['processing_step'] | null
           purchased_at: string | null
           source_type: Database['public']['Enums']['receipt_source']
           status: Database['public']['Enums']['receipt_status']
@@ -270,12 +272,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_provider?: string | null
           created_at?: string
           error?: string | null
           file_path?: string | null
           id?: string
           merchant?: string | null
           original_filename?: string | null
+          processing_step?: Database['public']['Enums']['processing_step'] | null
           purchased_at?: string | null
           source_type: Database['public']['Enums']['receipt_source']
           status?: Database['public']['Enums']['receipt_status']
@@ -283,12 +287,14 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          ai_provider?: string | null
           created_at?: string
           error?: string | null
           file_path?: string | null
           id?: string
           merchant?: string | null
           original_filename?: string | null
+          processing_step?: Database['public']['Enums']['processing_step'] | null
           purchased_at?: string | null
           source_type?: Database['public']['Enums']['receipt_source']
           status?: Database['public']['Enums']['receipt_status']
@@ -368,6 +374,23 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_totals: {
+        Row: {
+          item_count: number | null
+          receipt_id: string | null
+          total_co2e_kg: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'line_items_receipt_id_user_id_fkey'
+            columns: ['receipt_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'receipts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
     }
     Functions: {
       claim_receipt: {
@@ -392,6 +415,7 @@ export type Database = {
     Enums: {
       emission_unit: 'kg' | 'l' | 'piece' | 'eur'
       goal_period: 'month' | 'year'
+      processing_step: 'reading' | 'validating' | 'matching' | 'calculating'
       receipt_source: 'photo' | 'pdf' | 'csv'
       receipt_status: 'pending' | 'processing' | 'review' | 'done' | 'failed'
     }
@@ -517,6 +541,7 @@ export const Constants = {
     Enums: {
       emission_unit: ['kg', 'l', 'piece', 'eur'],
       goal_period: ['month', 'year'],
+      processing_step: ['reading', 'validating', 'matching', 'calculating'],
       receipt_source: ['photo', 'pdf', 'csv'],
       receipt_status: ['pending', 'processing', 'review', 'done', 'failed'],
     },
