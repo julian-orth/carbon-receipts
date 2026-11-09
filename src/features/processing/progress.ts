@@ -1,6 +1,4 @@
-import type { ReceiptStatus } from '@/features/receipts/types'
-import { attentionReasons, type LineItem } from '@/features/review/review-logic'
-import { ALL_DONE, formatKg, providerLabel, STEP } from './steps'
+import { attentionReasons, type LineItem, UNIT_LABEL } from '@/features/review/review-logic'
 
 export type Summary = {
   count: number
@@ -22,113 +20,35 @@ export function summarize(items: readonly LineItem[]): Summary {
   }
 }
 
-export type LogTone = 'neutral' | 'ok' | 'warn' | 'danger'
-export type LogEntry = { at: number; text: string; tone: LogTone }
 export type Visit = { step: number; at: number }
 export type ProviderVisit = { name: string; at: number }
 
-type LogInput = {
-  /** Shown steps with the time they became active (ms since the view opened). */
-  visits: readonly Visit[]
-  /** LLM providers in the order they were used. */
-  providers: readonly ProviderVisit[]
-  status: ReceiptStatus
-  error: string | null
-  failedAt: number | null
-  fromUpload: boolean
-  summary: Summary | null
+const priceFormatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+const quantityFormatter = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 })
+
+/** One printed line on the drawn receipt in the progress dialog. */
+export type PaperLine = {
+  id: string
+  name: string
+  price: string | null
+  categoryId: string | null
+  /** "0,3 kg", "~0,5 kg" when estimated; null without amount. */
+  quantity: string | null
+  co2eKg: number | null
+  needsLook: boolean
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-
-/** The protocol shown next to the steps – derived, so it is the same on every render. */
-export function buildLog(input: LogInput): LogEntry[] {
-  const { visits, providers, summary } = input
-  const entries: LogEntry[] = []
-  const first = visits[0]
-  if (first) {
-    entries.push(
-      input.fromUpload
-        ? { at: first.at, text: 'Upload gestartet', tone: 'neutral' }
-        : { at: first.at, text: 'Live-Ansicht geöffnet', tone: 'neutral' },
-    )
+export function toPaperLine(item: LineItem): PaperLine {
+  return {
+    id: item.id,
+    name: item.raw_text,
+    price: item.price === null ? null : priceFormatter.format(item.price),
+    categoryId: item.category_id,
+    quantity:
+      item.quantity === null || item.unit === null
+        ? null
+        : `${item.quantity_source === 'estimated' ? '~' : ''}${quantityFormatter.format(item.quantity)} ${UNIT_LABEL[item.unit]}`,
+    co2eKg: item.co2e_kg,
+    needsLook: attentionReasons(item).length > 0,
   }
-
-  for (const visit of visits.slice(1)) {
-    const { at } = visit
-    switch (visit.step) {
-      case STEP.read:
-        entries.push({ at, text: 'Foto liegt im privaten Speicher', tone: 'ok' })
-        if (input.status === 'pending' && providers.length === 0)
-          entries.push({ at, text: 'Wartet auf den Start der Analyse', tone: 'neutral' })
-        break
-      case STEP.validate:
-        entries.push({ at, text: 'Antwort entspricht dem Schema', tone: 'ok' })
-        break
-      case STEP.match:
-        if (summary) {
-          entries.push({
-            at,
-            text: `${plural(summary.count, 'Position', 'Positionen')} erkannt`,
-            tone: 'neutral',
-          })
-          if (summary.learned > 0)
-            entries.push({
-              at,
-              text: `${summary.learned}× Menge aus deinen Korrekturen`,
-              tone: 'neutral',
-            })
-          if (summary.estimated > 0)
-            entries.push({
-              at,
-              text: `${summary.estimated}× Packungsgröße geschätzt`,
-              tone: 'neutral',
-            })
-        }
-        break
-      case STEP.calculate:
-        entries.push({ at, text: 'Emissionsfaktoren angewendet', tone: 'neutral' })
-        break
-      case ALL_DONE:
-        if (summary) {
-          entries.push({ at, text: `Summe: ${formatKg(summary.totalKg)} kg CO₂e`, tone: 'ok' })
-          entries.push(
-            summary.attention > 0
-              ? {
-                  at,
-                  text: `${plural(summary.attention, 'Position braucht', 'Positionen brauchen')} deinen Blick`,
-                  tone: 'warn',
-                }
-              : { at, text: 'Bereit zur Prüfung', tone: 'ok' },
-          )
-        }
-        break
-    }
-  }
-
-  const opened = first?.at ?? 0
-  providers.forEach((provider, index) => {
-    const previous = providers[index - 1]
-    const at = Math.max(provider.at, opened)
-    entries.push(
-      previous
-        ? {
-            at,
-            text: `${providerLabel(previous.name)} nicht verfügbar · Fallback auf ${providerLabel(provider.name)}`,
-            tone: 'warn',
-          }
-        : { at, text: `Anfrage an ${providerLabel(provider.name)}`, tone: 'neutral' },
-    )
-  })
-
-  if (input.status === 'failed' && input.failedAt !== null) {
-    entries.push({
-      at: input.failedAt,
-      text: input.error ?? 'Analyse fehlgeschlagen',
-      tone: 'danger',
-    })
-  }
-
-  // Stable sort keeps the order above for entries with the same timestamp.
-  return entries.toSorted((a, b) => a.at - b.at)
 }

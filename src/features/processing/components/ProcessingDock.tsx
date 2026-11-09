@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router'
 import { useReceipts } from '@/features/receipts/queries'
 import { useReceiptsRealtime } from '@/features/receipts/realtime'
-import { providerLabel, serverStepIndex, STEPS } from '../steps'
+import { serverStepIndex, STEPS } from '../steps'
 
 const RING = 2 * Math.PI * 18
 
@@ -25,7 +25,7 @@ export function ProcessingDock({ userId }: { userId: string }) {
   const name = first.merchant ?? first.original_filename ?? 'Beleg'
   const title =
     running.length > 1 ? `${running.length} Belege werden analysiert` : `${name} wird analysiert`
-  const detail = `${current?.label ?? ''}${first.ai_provider ? ` · ${providerLabel(first.ai_provider)}` : ''}`
+  const detail = current?.label ?? ''
 
   return (
     <>

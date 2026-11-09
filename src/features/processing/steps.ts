@@ -1,16 +1,34 @@
 import type { Receipt } from '@/features/receipts/types'
 import type { Enums } from '@/types/db-helpers'
 
-export type StepKind = 'KI' | 'Code'
-
-/** The five steps shown to the user. Only reading is done by an AI. */
+/** The five steps shown to the user, in plain language. */
 export const STEPS = [
-  { label: 'Hochladen', kind: 'Code', activity: 'Foto wird hochgeladen' },
-  { label: 'Lesen', kind: 'KI', activity: 'Die KI liest deinen Bon' },
-  { label: 'Prüfen', kind: 'Code', activity: 'Ergebnis wird geprüft' },
-  { label: 'Zuordnen', kind: 'Code', activity: 'Kategorien & Mengen' },
-  { label: 'Berechnen', kind: 'Code', activity: 'CO₂e wird berechnet' },
-] as const satisfies readonly { label: string; kind: StepKind; activity: string }[]
+  {
+    label: 'Foto hochladen',
+    activity: 'Foto wird hochgeladen',
+    hint: 'Dein Bon wird in deinem privaten Speicher abgelegt. Nur du hast Zugriff darauf.',
+  },
+  {
+    label: 'Bon lesen',
+    activity: 'Bon wird gelesen',
+    hint: 'Händler, Datum und alle Positionen werden vom Foto gelesen. Das dauert meist 10 bis 30 Sekunden.',
+  },
+  {
+    label: 'Angaben prüfen',
+    activity: 'Angaben werden geprüft',
+    hint: 'Wir prüfen, ob alles vollständig ist. Pfand und Leergut werden aussortiert.',
+  },
+  {
+    label: 'Produkte zuordnen',
+    activity: 'Produkte werden zugeordnet',
+    hint: 'Jedes Produkt bekommt eine Kategorie. Deine früheren Korrekturen haben Vorrang.',
+  },
+  {
+    label: 'CO₂ berechnen',
+    activity: 'CO₂ wird berechnet',
+    hint: 'Für jedes Produkt wird der CO₂-Fußabdruck berechnet, jeder Wert mit Quelle.',
+  },
+] as const satisfies readonly { label: string; activity: string; hint: string }[]
 
 /** Index after the last step: everything is done. */
 export const ALL_DONE = STEPS.length
@@ -37,25 +55,6 @@ export function serverStepIndex(receipt: Pick<Receipt, 'status' | 'processing_st
  */
 export function displayTarget(serverIndex: number, itemsLoaded: boolean): number {
   return serverIndex > STEP.validate && !itemsLoaded ? STEP.validate : serverIndex
-}
-
-const PROVIDER_LABEL: Record<string, string> = { gemini: 'Gemini', groq: 'Groq', mock: 'Test-KI' }
-
-export function providerLabel(name: string): string {
-  return PROVIDER_LABEL[name] ?? name.charAt(0).toUpperCase() + name.slice(1)
-}
-
-/** "00:04.2" */
-export function formatClock(ms: number): string {
-  const tenths = Math.max(0, Math.floor(ms / 100))
-  const seconds = Math.floor(tenths / 10)
-  const minutes = Math.floor(seconds / 60)
-  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}.${tenths % 10}`
-}
-
-/** "3,4 s" */
-export function formatSeconds(ms: number): string {
-  return `${(Math.max(0, ms) / 1000).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s`
 }
 
 const kgFormatter = new Intl.NumberFormat('de-DE', {

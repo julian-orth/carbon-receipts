@@ -53,7 +53,7 @@ describe('ReceiptsPage', () => {
 
     const active = await screen.findByRole('list', { name: 'In Arbeit' })
     expect(within(active).getByRole('listitem')).toHaveTextContent(
-      /rewe\.jpg.*Schritt 2 von 5 · Die KI liest deinen Bon/,
+      /rewe\.jpg.*Schritt 2 von 5 · Bon wird gelesen/,
     )
     expect(within(active).getByRole('link', { name: /Fortschritt ansehen/ })).toHaveAttribute(
       'href',

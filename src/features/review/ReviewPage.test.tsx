@@ -17,7 +17,11 @@ import type { LineItem } from './review-logic'
 vi.mock('./api')
 vi.mock('@/features/categories/api')
 vi.mock('@/features/receipts/api')
-vi.mock('@/features/processing/timing', () => ({ MIN_STEP_MS: 0, CREEP_MS: [0, 0, 0, 0, 0] }))
+vi.mock('@/features/processing/timing', () => ({
+  MIN_STEP_MS: 0,
+  COUNT_UP_MS: 0,
+  CREEP_MS: [0, 0, 0, 0, 0],
+}))
 vi.mock(import('@/features/receipts/realtime'), async (importOriginal) => ({
   ...(await importOriginal()),
   useReceiptsRealtime: vi.fn<typeof useReceiptsRealtime>(),
@@ -338,18 +342,16 @@ describe('ReviewPage while the receipt is analysed', () => {
     const user = userEvent.setup()
     const { queryClient } = renderReceipt(running, { fromUpload: true })
 
-    const dialog = await screen.findByRole('dialog', { name: 'Die KI liest deinen Bon' })
-    expect(within(dialog).getByRole('log')).toHaveTextContent('Anfrage an Gemini')
-    expect(within(dialog).getByText('Lesen (KI): läuft')).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', { name: 'Bon wird gelesen …' })
+    expect(within(dialog).getByText('Bon lesen: läuft')).toBeInTheDocument()
+    // Plain language for users: no provider names, no "KI/Code" labels.
+    expect(dialog).not.toHaveTextContent(/Gemini|Groq|\bCode\b/)
 
     // The edge function falls back to Groq, then finishes (Realtime → cache).
     act(() => {
       queryClient.setQueryData<Receipt[]>(receiptKeys.list(), [{ ...running, ai_provider: 'groq' }])
     })
-    expect(
-      await within(dialog).findByText('Gemini nicht verfügbar · Fallback auf Groq'),
-    ).toBeInTheDocument()
-    expect(within(dialog).getByText('Groq · Fallback')).toBeInTheDocument()
+    expect(await within(dialog).findByText(/Dauert gerade etwas länger/)).toBeInTheDocument()
 
     mockedApi.fetchLineItems.mockResolvedValue([
       { ...beef, receipt_id: running.id },
@@ -368,10 +370,17 @@ describe('ReviewPage while the receipt is analysed', () => {
     })
 
     const done = await screen.findByRole('dialog', {
-      name: 'Fertig. 1 Position braucht deinen Blick.',
+      name: 'Fertig! 1 Position braucht deinen Blick.',
     })
     expect(within(done).getAllByText(/: erledigt$/)).toHaveLength(5)
-    expect(within(done).getByText('zu prüfen').parentElement).toHaveTextContent('zu prüfen1')
+    // The drawn receipt has filled up with the lines, in receipt order.
+    const printed = within(within(done).getByRole('list', { name: 'Erkannte Positionen' }))
+      .getAllByRole('listitem')
+      .map((line) => line.textContent)
+    expect(printed).toEqual([
+      expect.stringMatching(/Rinderhack 500g.*Rinderhackfleisch.*4,60 kg/),
+      expect.stringMatching(/Gouda jung Scheiben.*prüfen/),
+    ])
 
     await user.click(within(done).getByRole('button', { name: /Positionen prüfen/ }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -390,7 +399,7 @@ describe('ReviewPage while the receipt is analysed', () => {
     const dialog = await screen.findByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Im Hintergrund weiter' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Wird analysiert: Lesen' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Wird analysiert: Bon lesen' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fortschritt anzeigen' }))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
@@ -406,11 +415,9 @@ describe('ReviewPage while the receipt is analysed', () => {
     const user = userEvent.setup()
     renderReceipt(failed)
 
-    const dialog = await screen.findByRole('dialog', { name: 'Das hat nicht geklappt' })
-    expect(within(dialog).getByText('Lesen (KI): fehlgeschlagen')).toBeInTheDocument()
-    expect(within(dialog).getByRole('log')).toHaveTextContent(
-      'Die KI-Dienste sind gerade nicht erreichbar.',
-    )
+    const dialog = await screen.findByRole('dialog', { name: 'Das hat leider nicht geklappt' })
+    expect(within(dialog).getByText('Bon lesen: fehlgeschlagen')).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('Die KI-Dienste sind gerade nicht erreichbar.')
 
     await user.click(within(dialog).getByRole('button', { name: 'Erneut versuchen' }))
     expect(receipts.retryReceipt).toHaveBeenCalledWith(failed.id, expect.anything())

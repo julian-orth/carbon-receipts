@@ -86,6 +86,10 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
   const [dismissed, setDismissed] = useState(false)
   const dialogOpen = watching && !dismissed
 
+  const categoriesById = useMemo(
+    () => new Map((categories.data ?? []).map((category) => [category.id, category])),
+    [categories.data],
+  )
   const title = receipt.merchant ?? receipt.original_filename ?? 'Beleg'
   const itemsReady = complete && items.isSuccess && categories.isSuccess
 
@@ -137,8 +141,10 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
           receipt={receipt}
           items={complete && items.isSuccess ? items.data : null}
           itemsSettled={items.isSuccess || items.isError}
+          itemsError={items.isError}
+          onRetryItems={() => void items.refetch()}
+          categoriesById={categoriesById}
           imageUrl={image.data ?? null}
-          imageLoading={image.isPending && receipt.file_path !== null}
           fromUpload={fromUpload}
           open={dialogOpen}
           onOpenChange={(open) => setDismissed(!open)}
@@ -209,7 +215,7 @@ function AnalysisPlaceholder({
             ? 'Analyse fehlgeschlagen'
             : receipt.status === 'pending'
               ? 'Wartet auf die Analyse'
-              : `Wird analysiert: ${STEPS[step]?.label ?? 'Lesen'}`}
+              : `Wird analysiert: ${STEPS[step]?.label ?? 'Bon lesen'}`}
         </h2>
         <p className="text-sm text-muted-foreground">
           {failed

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
-import { KindTag } from '@/features/processing/components/StepList'
 import { type LiveViewState, STEPS } from '@/features/processing/steps'
 import { cn } from '@/lib/utils'
 import { ACCEPT_ATTRIBUTE, validateReceiptFile } from '../file-validation'
@@ -62,13 +61,13 @@ function HowItWorks() {
             <span className="font-mono text-xs text-brand tabular">
               {String(index + 1).padStart(2, '0')}
             </span>
-            <span className="flex-1">{step.activity}</span>
-            <KindTag kind={step.kind} className="border-ink-line text-ink-muted" />
+            <span className="flex-1">{step.label}</span>
           </li>
         ))}
       </ol>
       <p className="mt-auto text-[13px] leading-normal text-ink-muted">
-        Nur ein Schritt nutzt KI. Die CO₂-Werte rechnet getesteter Code, jeder mit Quelle.
+        Nur das Lesen des Fotos übernimmt eine KI. Die CO₂-Werte werden nachvollziehbar berechnet,
+        jeder mit Quelle.
       </p>
     </aside>
   )

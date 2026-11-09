@@ -312,3 +312,13 @@ next provider immediately (429 and other 5xx are still retried), Gemini gets a 2
 the default model is `gemini-3.5-flash`. `GEMINI_MODEL` accepts a list, so a newer model can be
 tried first without making it the only Gemini option. Failed attempts before a successful
 fallback are logged (`llm_fallback`) – before, they were invisible.
+
+## 025 – Progress dialog speaks to users, not developers
+
+The dialog of 023 showed "KI/Code" labels, provider names, fallbacks, timings and a log –
+interesting for us, noise for someone uploading a receipt. Now: steps in plain language with
+one explaining sentence for the running step, a neutral "dauert etwas länger" when a fallback
+happens, and a receipt drawn in HTML/CSS that fills up as the analysis goes on (blank → read →
+lines print → categories → CO₂e count up → "Fertig" stamp). The dialog is wider (two columns:
+receipt and steps; on phones a bottom sheet with a one-line step indicator). Provider names are
+no longer shown anywhere in the UI; they stay in the database and logs.

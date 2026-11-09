@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MiniSteps } from '@/features/processing/components/MiniSteps'
-import { formatKg, providerLabel, serverStepIndex, STEPS } from '@/features/processing/steps'
+import { formatKg, serverStepIndex, STEPS } from '@/features/processing/steps'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { useNow } from '@/lib/use-now'
 import type { ReceiptTotal } from '../api'
@@ -160,9 +160,7 @@ function InProgressItem({ receipt, now }: { receipt: Receipt; now: number }) {
       <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-2">
         <MiniSteps step={step} running={running} />
         <span className="font-mono text-xs text-muted-foreground">
-          {running && current
-            ? `${current.label}${receipt.ai_provider ? ` · ${providerLabel(receipt.ai_provider)}` : ''}`
-            : 'Wartet auf den Start'}
+          {running && current ? current.label : 'Wartet auf den Start'}
         </span>
       </div>
       <div className="flex items-center gap-1.5">
