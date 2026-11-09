@@ -1,5 +1,7 @@
 # Carbon Receipts
 
+[![CI](https://github.com/julian-orth/carbon-receipts/actions/workflows/ci.yml/badge.svg)](https://github.com/julian-orth/carbon-receipts/actions/workflows/ci.yml)
+
 Photograph a grocery receipt and see its carbon footprint. An LLM reads the line items and
 suggests a category; the app maps them to published emission factors and calculates CO₂e
 deterministically. Uncertain matches go to a review screen, corrections are learned, and a
@@ -22,8 +24,11 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
   follows the status live via Realtime
 - **LLM pipeline** with Gemini Flash, Groq as fallback, exponential backoff, Zod validation of
   every response, a daily quota per user and a deterministic mock provider for local work and E2E
-- **Review screen** with confidence flags, a live CO₂e preview, the factor and its source; category
-  corrections become mappings for the next receipt
+- **Missing amounts handled**: real receipts rarely print pack sizes, so the model may suggest a
+  typical one – stored as `estimated` and flagged, never silently trusted
+- **Review screen** with confidence flags, a live CO₂e preview, the factor and its source
+- **Learns from every confirmation**: category _and_ amount per product; a correction is applied to
+  other open items immediately, so the same fix is never needed twice
 - **Dashboard** with monthly trend vs. goal, breakdown by area, top hotspots and like-for-like
   alternatives with the saving for the actual purchase
 - **Accessible**: semantic HTML, keyboard operable, visible focus, table view for the chart, status
@@ -67,8 +72,9 @@ The reasoning behind these and other choices – including what was traded away 
   [_CO2-Emissionsfaktoren des Treibhausgasinventars der Schweiz_](https://www.bafu.admin.ch/dam/de/sd-web/NlGIhzJ8OW0t/CO2_Emissionsfaktoren_THG_Inventar.pdf)
   – combustion only
 
-69 categories, each storing the table and row it comes from. Known limitations (system boundaries,
-density assumption for beverages, per-piece eggs) are listed in decision 011.
+75 categories, each storing the table and row it comes from – including ready meals (per portion)
+and pet food. Known limitations (system boundaries, density assumption for beverages, per-piece
+eggs, a weaker source for pet food) are listed in decisions 011 and 019.
 
 ## Tech stack
 
@@ -80,11 +86,12 @@ Gemini Flash / Groq · Vitest + Testing Library · pgTAP · Playwright + axe · 
 
 | Layer            | What                                                                                          |
 | ---------------- | --------------------------------------------------------------------------------------------- |
-| Unit & component | 214 Vitest tests: calculation, units, normalization, LLM fallback, Zod schema, all pages      |
-| Database         | 44 pgTAP tests: RLS per role, grants, status transitions, quota, views, demo data             |
+| Unit & component | 248 Vitest tests: calculation, units, normalization, LLM fallback, Zod schema, all pages      |
+| Database         | 55 pgTAP tests: RLS per role, grants, status transitions, quota, atomic processing, views     |
 | Edge function    | Deno type check in CI                                                                         |
 | End-to-end       | Playwright on desktop + mobile: magic link → upload → AI → Realtime → review → dashboard, axe |
-| CI               | format, lint, typecheck, tests, build · DB tests + generated-types drift check · E2E          |
+| Static analysis  | strict TypeScript, type-aware lint (no floating promises, no unchecked casts), knip           |
+| CI               | format, lint, knip, typecheck, tests, build · DB tests + types drift · Deno check · E2E       |
 
 ## Getting started
 

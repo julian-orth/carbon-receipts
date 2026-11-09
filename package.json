@@ -2,6 +2,7 @@
   "name": "carbon-receipts",
   "private": true,
   "version": "0.0.0",
+  "description": "Receipt photos to CO2e: an LLM extracts line items, deterministic code calculates emissions from published factors.",
   "type": "module",
   "scripts": {
     "dev": "vite",
