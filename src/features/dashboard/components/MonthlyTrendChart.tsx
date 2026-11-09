@@ -86,7 +86,7 @@ export function MonthlyTrendChart({
                 <Cell
                   key={point.month}
                   // The running month is lighter: it is not complete yet.
-                  fill={point.isCurrent ? 'var(--viz-series-1-muted)' : 'var(--viz-series-1)'}
+                  fill={point.isCurrent ? 'var(--viz-bar-muted)' : 'var(--viz-bar)'}
                 />
               ))}
             </Bar>

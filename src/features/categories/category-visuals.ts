@@ -57,22 +57,49 @@ type GroupVisual = {
 }
 
 const GROUP_VISUAL: Record<string, GroupVisual> = {
-  fruit_vegetables: { icon: Carrot, tile: 'bg-emerald-100 text-emerald-800' },
-  dairy_eggs: { icon: Milk, tile: 'bg-sky-100 text-sky-800' },
-  meat_fish: { icon: Drumstick, tile: 'bg-rose-100 text-rose-800' },
-  plant_protein: { icon: Vegan, tile: 'bg-lime-100 text-lime-800' },
-  staples: { icon: Wheat, tile: 'bg-amber-100 text-amber-800' },
-  fats_sweets: { icon: Candy, tile: 'bg-orange-100 text-orange-800' },
-  beverages: { icon: CanSoda, tile: 'bg-cyan-100 text-cyan-800' },
-  ready_meals: { icon: CookingPot, tile: 'bg-violet-100 text-violet-800' },
-  pet: { icon: PawPrint, tile: 'bg-stone-200 text-stone-800' },
-  fuel: { icon: Fuel, tile: 'bg-zinc-200 text-zinc-800' },
-  other: { icon: Package, tile: 'bg-zinc-100 text-zinc-700' },
+  fruit_vegetables: {
+    icon: Carrot,
+    tile: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300',
+  },
+  dairy_eggs: { icon: Milk, tile: 'bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300' },
+  meat_fish: {
+    icon: Drumstick,
+    tile: 'bg-rose-100 text-rose-800 dark:bg-rose-400/15 dark:text-rose-300',
+  },
+  plant_protein: {
+    icon: Vegan,
+    tile: 'bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300',
+  },
+  staples: {
+    icon: Wheat,
+    tile: 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300',
+  },
+  fats_sweets: {
+    icon: Candy,
+    tile: 'bg-orange-100 text-orange-800 dark:bg-orange-400/15 dark:text-orange-300',
+  },
+  beverages: {
+    icon: CanSoda,
+    tile: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-400/15 dark:text-cyan-300',
+  },
+  ready_meals: {
+    icon: CookingPot,
+    tile: 'bg-violet-100 text-violet-800 dark:bg-violet-400/15 dark:text-violet-300',
+  },
+  pet: {
+    icon: PawPrint,
+    tile: 'bg-stone-200 text-stone-800 dark:bg-stone-400/15 dark:text-stone-300',
+  },
+  fuel: { icon: Fuel, tile: 'bg-zinc-200 text-zinc-800 dark:bg-zinc-400/15 dark:text-zinc-300' },
+  other: {
+    icon: Package,
+    tile: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-400/15 dark:text-zinc-300',
+  },
 }
 
 const FALLBACK_GROUP: GroupVisual = GROUP_VISUAL.other ?? {
   icon: Package,
-  tile: 'bg-zinc-100 text-zinc-700',
+  tile: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-400/15 dark:text-zinc-300',
 }
 
 const ICON_BY_SLUG: Record<string, LucideIcon> = {

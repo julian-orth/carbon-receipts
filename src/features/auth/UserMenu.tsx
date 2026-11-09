@@ -11,7 +11,7 @@ export function UserMenu() {
   if (auth.status !== 'authenticated') return null
 
   return (
-    <div className="ml-auto flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">
         {auth.user.email}
       </span>

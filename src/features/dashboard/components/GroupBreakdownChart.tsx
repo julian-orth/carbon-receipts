@@ -25,7 +25,7 @@ export function GroupBreakdownChart({ groups }: { groups: GroupTotal[] }) {
             </div>
             <div className="h-2 rounded-full bg-muted" aria-hidden>
               <div
-                className="h-full rounded-full bg-[var(--viz-series-1)]"
+                className="h-full rounded-full bg-viz-bar"
                 style={{ width: `${(group.totalKg / max) * 100}%` }}
               />
             </div>

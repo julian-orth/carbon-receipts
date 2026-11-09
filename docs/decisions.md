@@ -322,3 +322,12 @@ happens, and a receipt drawn in HTML/CSS that fills up as the analysis goes on (
 lines print → categories → CO₂e count up → "Fertig" stamp). The dialog is wider (two columns:
 receipt and steps; on phones a bottom sheet with a one-line step indicator). Provider names are
 no longer shown anywhere in the UI; they stay in the database and logs.
+
+## 026 – Dark mode
+
+Follows the system by default; a header menu switches between light, dark and system (stored in
+`localStorage`, failures ignored). `public/theme-init.js` applies the class before the first
+paint – an external file because the CSP forbids inline scripts. The dark palette is selected,
+not flipped: ink background, lime as primary action, the receipt paper stays light. Chart bars
+use one green ramp per mode (validated: light end ≥ 2:1 on the card surface in both modes).
+Status colours moved from hex literals to tokens (`success-soft`, `danger-*`).

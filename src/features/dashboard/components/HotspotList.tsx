@@ -29,7 +29,7 @@ export function HotspotList({ hotspots }: { hotspots: HotspotRow[] }) {
           </div>
           <div className="h-1.5 rounded-full bg-muted" aria-hidden>
             <div
-              className="h-full rounded-full bg-[var(--viz-series-1)]"
+              className="h-full rounded-full bg-viz-bar"
               style={{ width: `${((item.co2e_kg ?? 0) / max) * 100}%` }}
             />
           </div>

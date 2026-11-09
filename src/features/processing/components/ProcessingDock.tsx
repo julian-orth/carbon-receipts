@@ -37,7 +37,7 @@ export function ProcessingDock({ userId }: { userId: string }) {
       >
         <Link
           to={`/receipts/${first.id}`}
-          className="flex items-center gap-3.5 rounded-full bg-ink py-2.5 pr-5 pl-2.5 text-ink-foreground shadow-[0_18px_40px_rgba(18,20,18,.25)] transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none sm:max-w-sm"
+          className="flex items-center gap-3.5 rounded-full bg-ink py-2.5 pr-5 pl-2.5 text-ink-foreground shadow-[0_18px_40px_rgba(18,20,18,.25)] transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none sm:max-w-sm dark:ring-1 dark:ring-ink-line"
         >
           <span className="relative size-11 shrink-0">
             <svg viewBox="0 0 44 44" aria-hidden="true" className="size-11 -rotate-90">

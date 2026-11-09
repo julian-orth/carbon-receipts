@@ -141,7 +141,7 @@ function InProgressItem({ receipt, now }: { receipt: Receipt; now: number }) {
     <li className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 transition-colors hover:bg-muted/40 sm:px-6">
       <div
         aria-hidden="true"
-        className="relative h-13 w-10 shrink-0 overflow-hidden rounded border border-[#e3e0d6] bg-paper"
+        className="relative h-13 w-10 shrink-0 overflow-hidden rounded border border-paper-line/60 bg-paper"
       >
         {running && (
           <div className="absolute inset-0 animate-scan motion-reduce:hidden">

@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { UserMenu } from '@/features/auth/UserMenu'
 import { ProcessingDock } from '@/features/processing/components/ProcessingDock'
 import { MainNav } from './MainNav'
+import { ThemeToggle } from './ThemeToggle'
 
 export function RootLayout() {
   const auth = useAuth()
@@ -28,7 +29,10 @@ export function RootLayout() {
             <span className="max-sm:sr-only">Carbon Receipts</span>
           </Link>
           <MainNav />
-          <UserMenu />
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <ThemeToggle />
+            <UserMenu />
+          </div>
         </nav>
       </header>
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">

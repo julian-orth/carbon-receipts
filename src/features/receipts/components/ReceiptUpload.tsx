@@ -51,7 +51,7 @@ function HowItWorks() {
   return (
     <aside
       aria-labelledby="how-it-works-title"
-      className="flex flex-col gap-4 rounded-3xl bg-ink p-6 text-ink-foreground sm:p-7"
+      className="flex flex-col gap-4 rounded-3xl bg-ink p-6 text-ink-foreground sm:p-7 dark:ring-1 dark:ring-ink-line"
     >
       <h3 id="how-it-works-title" className="text-[15px] font-semibold">
         So läuft die Verarbeitung

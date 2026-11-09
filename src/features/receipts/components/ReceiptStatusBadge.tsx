@@ -6,8 +6,8 @@ const STYLE: Record<ReceiptStatus, { pill: string; dot: string }> = {
   pending: { pill: 'bg-secondary text-secondary-foreground', dot: 'bg-muted-foreground' },
   processing: { pill: 'bg-secondary text-secondary-foreground', dot: 'bg-success animate-blink' },
   review: { pill: 'bg-warning-soft text-warning-foreground', dot: 'bg-warning' },
-  done: { pill: 'bg-[#eaf3da] text-[#24410f]', dot: 'bg-success' },
-  failed: { pill: 'bg-[#fbe3df] text-[#7a1f15]', dot: 'bg-[#c2412f]' },
+  done: { pill: 'bg-success-soft text-success-foreground', dot: 'bg-success' },
+  failed: { pill: 'bg-danger-soft text-danger-foreground', dot: 'bg-danger' },
 }
 
 export function ReceiptStatusBadge({ status }: { status: ReceiptStatus }) {

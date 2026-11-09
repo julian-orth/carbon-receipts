@@ -13,6 +13,19 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-viz-bar: var(--viz-bar);
+  --color-viz-bar-muted: var(--viz-bar-muted);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-goal: var(--viz-goal);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-line: var(--hero-line);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-foreground: var(--warning-foreground);
@@ -68,14 +81,25 @@
 }
 
 :root {
-  /* Data viz (validated reference palette): one sequential hue, recessive axes */
-  --viz-series-1: #2a78d6;
-  --viz-series-1-muted: #86b6ef;
+  /* Data viz: one sequential hue (brand green, darkened for the light surface), recessive axes.
+     The running month uses the lighter step (>= 2:1 on the card). */
+  --viz-bar: #3f6b12;
+  --viz-bar-muted: #8db45a;
   --viz-goal: #52514e;
   --viz-grid: #e6e5e1;
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-critical: #d03b3b;
+  /* Hero card: ink in both modes, the one loud surface of the dashboard */
+  --hero: #0d0f0d;
+  --hero-foreground: #f2f3ef;
+  --hero-muted: #a3aaa3;
+  --hero-line: #2a2f2a;
+  --success-soft: #eaf3da;
+  --success-foreground: #24410f;
+  --danger: #c2412f;
+  --danger-soft: #fbe3df;
+  --danger-foreground: #7a1f15;
   --background: #f5f5f1;
   --foreground: #121412;
   --card: #ffffff;
@@ -129,41 +153,59 @@
 }
 
 .dark {
-  --viz-series-1: #3987e5;
-  --viz-series-1-muted: #184f95;
+  /* Selected for the dark surface, not an automatic flip: ink background, lime as the
+     primary action, receipt paper stays light like the real thing. */
+  --viz-bar: #c8f169;
+  --viz-bar-muted: #6f8f3a;
   --viz-goal: #c3c2b7;
-  --viz-grid: #383835;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --viz-grid: #2a2f2a;
+  --status-good: #5fd35f;
+  --status-warning: #f5b54a;
+  --status-critical: #ff8a7d;
+  --background: #0b0d0b;
+  --foreground: #eef0ea;
+  --card: #141714;
+  --card-foreground: #eef0ea;
+  --popover: #181b18;
+  --popover-foreground: #eef0ea;
+  --primary: #c8f169;
+  --primary-foreground: #121412;
+  --secondary: #1f231f;
+  --secondary-foreground: #eef0ea;
+  --muted: #1c201c;
+  --muted-foreground: #a3aaa3;
+  --accent: #232823;
+  --accent-foreground: #eef0ea;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: #262b26;
+  --input: #343a34;
+  --ring: #c8f169;
+  --success: #8fd14f;
+  --success-soft: #1c2e10;
+  --success-foreground: #b6e48a;
+  --warning: #e0a43a;
+  --warning-soft: #3a2c0c;
+  --warning-foreground: #f6cf7d;
+  --danger: #ff8a7d;
+  --danger-soft: #3a1512;
+  --danger-foreground: #ffb4a8;
+  --hero: #151a12;
+  --hero-foreground: #f2f3ef;
+  --hero-muted: #a3aaa3;
+  --hero-line: #2c3428;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #141714;
+  --sidebar-foreground: #eef0ea;
+  --sidebar-primary: #c8f169;
+  --sidebar-primary-foreground: #121412;
+  --sidebar-accent: #232823;
+  --sidebar-accent-foreground: #eef0ea;
+  --sidebar-border: #262b26;
+  --sidebar-ring: #c8f169;
 }
 
 @layer base {
