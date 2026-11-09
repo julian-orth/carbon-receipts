@@ -1,14 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, TriangleAlert } from 'lucide-react'
-import { useId, useMemo } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Check, ChevronDown, CornerDownLeft, Info, TriangleAlert } from 'lucide-react'
+import { type KeyboardEvent, useId, useMemo } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
-import { type EmissionCategory, GROUP_LABEL } from '@/features/categories/categories'
+import { type EmissionCategory } from '@/features/categories/categories'
+import { CategoryPicker } from '@/features/categories/CategoryPicker'
+import { CategoryTile } from '@/features/categories/CategoryTile'
+import { formatFactor } from '@/features/categories/category-visuals'
 import { formatCo2e } from '@/lib/format-co2'
 import { cn } from '@/lib/utils'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
@@ -23,7 +25,10 @@ import {
   UNIT_LABEL,
 } from '../review-logic'
 
-const SELECTABLE_UNITS: EmissionUnit[] = ['kg', 'l', 'piece']
+const SELECTABLE_UNITS = ['kg', 'l', 'piece'] as const satisfies readonly EmissionUnit[]
+type SelectableUnit = (typeof SELECTABLE_UNITS)[number]
+const isSelectable = (unit: EmissionUnit | null): unit is SelectableUnit =>
+  unit === 'kg' || unit === 'l' || unit === 'piece'
 
 const rowSchema = z.object({
   categoryId: z.string(),
@@ -37,48 +42,70 @@ const rowSchema = z.object({
 })
 type RowForm = z.infer<typeof rowSchema>
 
-const selectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive'
+const priceFormatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+const quantityFormatter = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 })
 
+function formValues(item: LineItem): RowForm {
+  return {
+    categoryId: item.category_id ?? '',
+    quantity: formatQuantityInput(item.quantity),
+    unit: isSelectable(item.unit) ? item.unit : '',
+  }
+}
+
+export type SaveResult = { appliedTo: number }
+
+type LineItemRowProps = {
+  item: LineItem
+  categories: readonly EmissionCategory[]
+  categoriesById: ReadonlyMap<string, EmissionCategory>
+  expanded: boolean
+  onToggle: () => void
+  onSaved: (result: SaveResult) => void
+  /** Staggered entrance right after the analysis; null for no animation. */
+  enterDelayMs?: number | null
+}
+
+/**
+ * One receipt line: a compact summary that opens into an editor. The form stays
+ * mounted while collapsed, so an unsaved change survives opening another line.
+ */
 export function LineItemRow({
   item,
   categories,
-}: {
-  item: LineItem
-  categories: readonly EmissionCategory[]
-}) {
+  categoriesById,
+  expanded,
+  onToggle,
+  onSaved,
+  enterDelayMs = null,
+}: LineItemRowProps) {
   const save = useSaveLineItem()
   const baseId = useId()
-  const categoriesById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
-  const groups = useMemo(() => {
-    const byGroup = new Map<string, EmissionCategory[]>()
-    for (const category of categories) {
-      const list = byGroup.get(category.category_group) ?? []
-      list.push(category)
-      byGroup.set(category.category_group, list)
-    }
-    return [...byGroup.entries()]
-  }, [categories])
-
+  const values = useMemo(() => formValues(item), [item])
   const form = useForm<RowForm>({
     resolver: zodResolver(rowSchema),
-    defaultValues: {
-      categoryId: item.category_id ?? '',
-      quantity: formatQuantityInput(item.quantity),
-      unit: item.unit === 'eur' || item.unit === null ? '' : item.unit,
-    },
+    // Server updates (e.g. a correction learned on another line) flow in, unsaved edits stay.
+    values,
+    resetOptions: { keepDirtyValues: true },
   })
-  const values = useWatch({ control: form.control })
-  const category = values.categoryId ? categoriesById.get(values.categoryId) : undefined
-  const quantity = parseQuantityInput(values.quantity ?? '')
-  const unit = values.unit === undefined || values.unit === '' ? null : values.unit
+  const draft = useWatch({ control: form.control })
+
+  const category = draft.categoryId ? categoriesById.get(draft.categoryId) : undefined
+  const savedCategory = item.category_id ? categoriesById.get(item.category_id) : undefined
+  const quantity = parseQuantityInput(draft.quantity ?? '')
+  const unit = draft.unit === undefined || draft.unit === '' ? null : draft.unit
   const preview = computeCo2e(
-    { categoryId: values.categoryId || null, quantity: quantity ?? null, unit, price: item.price },
+    { categoryId: draft.categoryId || null, quantity: quantity ?? null, unit, price: item.price },
     category,
   )
   const reasons = attentionReasons(item)
+  const open = reasons.length > 0
   const isDirty = form.formState.isDirty
   const quantityError = form.formState.errors.quantity?.message
+  const unitMismatch =
+    category !== undefined && isSelectable(category.unit) && unit !== null && unit !== category.unit
+      ? category.unit
+      : null
 
   const onSubmit = form.handleSubmit((data) => {
     const nextQuantity = parseQuantityInput(data.quantity) ?? null
@@ -103,163 +130,305 @@ export function LineItemRow({
         co2eKg: result.ok ? result.co2eKg : null,
         category: nextCategory ?? null,
       },
-      { onSuccess: () => form.reset(data) },
+      {
+        onSuccess: (saved) => {
+          form.reset(data)
+          onSaved(saved)
+        },
+      },
     )
   })
 
+  function chooseCategory(categoryId: string) {
+    form.setValue('categoryId', categoryId, { shouldDirty: true })
+    const next = categoriesById.get(categoryId)
+    // Without an amount yet, the category's own unit is the sensible default.
+    if (next && isSelectable(next.unit) && (unit === null || quantity == null)) {
+      form.setValue('unit', next.unit, { shouldDirty: true })
+    }
+  }
+
+  function cancel() {
+    form.reset(values)
+    onToggle()
+  }
+
+  function onPanelKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    // React bubbles events out of portals: Escape inside the category popover only
+    // closes the popover, not the line.
+    const inside = event.target instanceof Node && event.currentTarget.contains(event.target)
+    if (event.key === 'Escape' && inside && !event.defaultPrevented) {
+      event.preventDefault()
+      onToggle()
+      document.getElementById(`${baseId}-toggle`)?.focus()
+    }
+  }
+
+  const summaryQuantity =
+    item.quantity === null || item.unit === null
+      ? null
+      : `${item.quantity_source === 'estimated' ? '~' : ''}${quantityFormatter.format(item.quantity)} ${UNIT_LABEL[item.unit]}`
+
   return (
     <li
+      data-item-id={item.id}
+      style={enterDelayMs === null ? undefined : { animationDelay: `${enterDelayMs}ms` }}
       className={cn(
-        'rounded-lg border p-4',
-        reasons.length > 0 && 'border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/20',
+        'scroll-mt-24 scroll-mb-28 rounded-2xl border bg-card transition-shadow',
+        enterDelayMs !== null && 'animate-rise [animation-fill-mode:both]',
+        expanded && 'shadow-[0_10px_30px_rgba(18,20,18,.08)] ring-1 ring-foreground/10',
+        open && !expanded && 'border-warning/50',
       )}
     >
-      <form
-        onSubmit={(event) => void onSubmit(event)}
-        aria-labelledby={`${baseId}-title`}
-        className="space-y-3"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 id={`${baseId}-title`} className="font-medium">
-              {item.raw_text}
-            </h3>
-            {item.price !== null && (
-              <p className="text-sm text-muted-foreground">
-                {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-              </p>
+      <h3 className="m-0">
+        <button
+          id={`${baseId}-toggle`}
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`${baseId}-panel`}
+          onClick={onToggle}
+          className="flex w-full items-center gap-3 rounded-2xl p-3 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:gap-4 sm:px-4"
+        >
+          <span
+            aria-hidden="true"
+            className="w-5 shrink-0 text-right font-mono text-xs text-muted-foreground tabular"
+          >
+            {String(item.position).padStart(2, '0')}
+          </span>
+          <CategoryTile category={savedCategory} />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate font-mono text-sm font-medium">{item.raw_text}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {[
+                savedCategory?.label ?? 'Keine Kategorie',
+                summaryQuantity,
+                item.price === null ? null : priceFormatter.format(item.price),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+          </span>
+          <span className="flex shrink-0 flex-col items-end gap-1">
+            <span className="font-mono text-sm tabular">
+              {item.co2e_kg === null ? (
+                <span className="text-muted-foreground">–</span>
+              ) : (
+                formatCo2e(item.co2e_kg)
+              )}
+            </span>
+            <RowStatus open={open} reviewed={item.reviewed} dirty={isDirty} />
+          </span>
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              'size-4 shrink-0 text-muted-foreground transition-transform max-sm:hidden',
+              expanded && 'rotate-180',
             )}
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {reasons.map((reason) => (
-              <Badge key={reason} variant="outline" className="border-amber-500/60">
-                <TriangleAlert aria-hidden />
-                {ATTENTION_LABEL[reason]}
-              </Badge>
-            ))}
-            {item.reviewed && !isDirty && (
-              <Badge variant="secondary">
-                <Check aria-hidden />
-                Geprüft
-              </Badge>
-            )}
-          </div>
-        </div>
+          />
+        </button>
+      </h3>
 
-        <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
-          <div className="space-y-1">
-            <Label htmlFor={`${baseId}-category`}>Kategorie</Label>
-            <select
-              id={`${baseId}-category`}
-              className={selectClass}
-              {...form.register('categoryId')}
-            >
-              <option value="">– keine passende –</option>
-              {groups.map(([group, list]) => (
-                <optgroup key={group} label={GROUP_LABEL[group] ?? group}>
-                  {list.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </optgroup>
+      {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- Escape closes the editor; every control inside stays keyboard operable on its own */}
+      <div
+        id={`${baseId}-panel`}
+        hidden={!expanded}
+        onKeyDown={onPanelKeyDown}
+        className="border-t px-3 pt-4 pb-4 sm:px-4"
+      >
+        <form
+          onSubmit={(event) => void onSubmit(event)}
+          aria-label={item.raw_text}
+          className="flex flex-col gap-4"
+        >
+          {(open || item.quantity_source === 'learned') && !isDirty && (
+            <ul className="flex flex-wrap gap-1.5" aria-label="Hinweise">
+              {reasons.map((reason) => (
+                <li
+                  key={reason}
+                  className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning-foreground"
+                >
+                  <TriangleAlert aria-hidden className="size-3.5" />
+                  {ATTENTION_LABEL[reason]}
+                </li>
               ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${baseId}-quantity`}>Menge</Label>
-            <Input
-              id={`${baseId}-quantity`}
-              inputMode="decimal"
-              autoComplete="off"
-              aria-invalid={quantityError ? true : undefined}
-              aria-describedby={quantityError ? `${baseId}-quantity-error` : undefined}
-              {...form.register('quantity')}
+              {item.quantity_source === 'estimated' && (
+                <li className="inline-flex items-center px-1 text-xs text-muted-foreground">
+                  Übliche Packungsgröße, von der KI geschätzt
+                </li>
+              )}
+              {item.quantity_source === 'learned' && (
+                <li className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                  <Info aria-hidden className="size-3.5" />
+                  Menge aus deiner früheren Korrektur
+                </li>
+              )}
+            </ul>
+          )}
+
+          <div className="flex flex-col gap-1.5">
+            <Label id={`${baseId}-category-label`}>Kategorie</Label>
+            <Controller
+              control={form.control}
+              name="categoryId"
+              render={({ field }) => (
+                <CategoryPicker
+                  categories={categories}
+                  value={field.value}
+                  onChange={chooseCategory}
+                  receiptText={item.raw_text}
+                  uncertain={!isDirty && reasons.includes('low_confidence') && field.value !== ''}
+                  labelId={`${baseId}-category-label`}
+                />
+              )}
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${baseId}-unit`}>Einheit</Label>
-            <select id={`${baseId}-unit`} className={selectClass} {...form.register('unit')}>
-              <option value="">–</option>
-              {SELECTABLE_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {UNIT_LABEL[u]}
-                </option>
-              ))}
-            </select>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex w-32 flex-col gap-1.5">
+              <Label htmlFor={`${baseId}-quantity`}>Menge</Label>
+              <Input
+                id={`${baseId}-quantity`}
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="z. B. 0,5"
+                className="h-11 font-mono tabular"
+                aria-invalid={quantityError ? true : undefined}
+                aria-describedby={quantityError ? `${baseId}-quantity-error` : undefined}
+                {...form.register('quantity')}
+              />
+            </div>
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className="mb-1.5 text-sm leading-none font-medium">Einheit</legend>
+              <div className="inline-flex h-11 rounded-xl border bg-muted p-1">
+                {SELECTABLE_UNITS.map((option) => (
+                  <label
+                    key={option}
+                    className="relative inline-flex cursor-pointer items-center rounded-lg px-3 text-sm text-muted-foreground transition-colors has-checked:bg-card has-checked:font-medium has-checked:text-foreground has-checked:shadow-sm has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+                  >
+                    <input
+                      type="radio"
+                      value={option}
+                      className="sr-only"
+                      {...form.register('unit')}
+                    />
+                    {UNIT_LABEL[option]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
-        </div>
-        {quantityError && (
-          <p id={`${baseId}-quantity-error`} className="text-sm text-destructive">
-            {quantityError}
-          </p>
-        )}
+          {quantityError && (
+            <p id={`${baseId}-quantity-error`} className="-mt-2 text-sm text-destructive">
+              {quantityError}
+            </p>
+          )}
 
-        {item.quantity_source === 'learned' && !isDirty && (
-          <p className="text-xs text-muted-foreground">
-            Menge aus deiner früheren Korrektur übernommen.
-          </p>
-        )}
-        {item.quantity_source === 'estimated' && !isDirty && (
-          <p className="text-xs text-muted-foreground">
-            Menge von der KI geschätzt (übliche Packungsgröße) – bitte prüfen.
-          </p>
-        )}
-
-        {/* Preview and actions on separate rows: the preview changes while typing and must not move the button. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm sm:min-w-0 sm:flex-1" aria-live="polite">
+          <output
+            aria-live="polite"
+            className={cn(
+              'flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3',
+              preview.ok ? 'bg-muted' : 'bg-warning-soft text-warning-foreground',
+            )}
+          >
             {preview.ok ? (
               <>
-                <span className="font-semibold">{formatCo2e(preview.co2eKg)}</span>
+                <span className="text-2xl font-semibold tracking-tight tabular">
+                  {formatCo2e(preview.co2eKg)}
+                </span>
                 {category && (
-                  <span className="text-muted-foreground">
-                    {' '}
-                    · {category.co2e_per_unit.toLocaleString('de-DE')} kg CO₂e pro{' '}
-                    {UNIT_LABEL[category.unit]} ·{' '}
+                  <span className="min-w-0 flex-1 text-sm text-muted-foreground">
+                    {quantity != null && unit !== null && (
+                      <>
+                        <span className="font-mono">
+                          {quantityFormatter.format(quantity)} {UNIT_LABEL[unit]} ×{' '}
+                          {formatFactor(category)}
+                        </span>
+                        <br />
+                      </>
+                    )}
+                    {preview.note && <>{preview.note} · </>}
                     <a
                       href={category.source_url ?? undefined}
                       target="_blank"
                       rel="noreferrer"
-                      title={category.source}
-                      className="underline underline-offset-4"
+                      className="underline underline-offset-4 hover:text-foreground"
                     >
-                      Quelle
+                      Quelle: {category.source}
                     </a>
                   </span>
                 )}
-                {preview.note && <span className="text-muted-foreground"> · {preview.note}</span>}
               </>
             ) : (
-              <span className="text-muted-foreground">Kein CO₂-Wert: {preview.message}</span>
+              <>
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <TriangleAlert aria-hidden className="size-4" />
+                  Kein CO₂-Wert: {preview.message}
+                </span>
+                {unitMismatch && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="bg-card"
+                    onClick={() => form.setValue('unit', unitMismatch, { shouldDirty: true })}
+                  >
+                    Einheit auf {UNIT_LABEL[unitMismatch]} stellen
+                  </Button>
+                )}
+              </>
             )}
-          </p>
-          <div className="flex shrink-0 items-center gap-2">
-            {save.isSuccess && save.data.appliedTo > 0 && !isDirty && (
-              <output className="text-xs text-muted-foreground">
-                Auch bei {save.data.appliedTo} weiteren offenen{' '}
-                {save.data.appliedTo === 1 ? 'Position' : 'Positionen'} übernommen
-              </output>
-            )}
+          </output>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {save.isError && (
-              <span role="alert" className="text-sm text-destructive">
-                Speichern fehlgeschlagen
+              <span role="alert" className="mr-auto text-sm text-destructive">
+                Speichern fehlgeschlagen. Bitte erneut versuchen.
               </span>
             )}
-            {(isDirty || !item.reviewed) && (
-              <Button
-                type="submit"
-                size="sm"
-                variant={isDirty ? 'default' : 'outline'}
-                disabled={save.isPending}
-              >
-                {save.isPending ? <Spinner /> : <Check aria-hidden />}
-                {isDirty ? 'Speichern' : 'Passt so'}
-              </Button>
-            )}
+            <Button type="button" variant="ghost" onClick={cancel}>
+              {isDirty ? 'Verwerfen' : 'Schließen'}
+            </Button>
+            <Button type="submit" disabled={save.isPending} className="min-w-36">
+              {save.isPending ? <Spinner /> : <Check aria-hidden />}
+              {isDirty ? 'Speichern' : 'Passt so'}
+              <CornerDownLeft aria-hidden className="ml-1 size-3.5 opacity-60 max-sm:hidden" />
+            </Button>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </li>
+  )
+}
+
+function RowStatus({
+  open,
+  reviewed,
+  dirty,
+}: {
+  open: boolean
+  reviewed: boolean
+  dirty: boolean
+}) {
+  if (dirty) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-foreground" />
+        Ungespeichert
+      </span>
+    )
+  }
+  if (open) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-warning-foreground">
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-warning" />
+        Prüfen
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-success">
+      <Check aria-hidden className="size-3.5" />
+      {reviewed ? 'Geprüft' : 'Plausibel'}
+    </span>
   )
 }

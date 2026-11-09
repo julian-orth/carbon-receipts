@@ -16,8 +16,9 @@ export function ProcessingDock({ userId }: { userId: string }) {
 
   const running = receipts.data?.filter((receipt) => receipt.status === 'processing') ?? []
   const first = running[0]
-  // The receipts page shows running analyses in its own "In Arbeit" section.
-  if (!first || location.pathname === '/receipts') return null
+  // The receipts page lists running analyses itself; the receipt's own page shows its progress.
+  if (!first || location.pathname === '/receipts' || location.pathname === `/receipts/${first.id}`)
+    return null
 
   const step = serverStepIndex(first)
   const current = STEPS[step]
@@ -35,7 +36,7 @@ export function ProcessingDock({ userId }: { userId: string }) {
         className="fixed inset-x-4 bottom-4 z-40 animate-rise sm:inset-x-auto sm:right-6 sm:bottom-6"
       >
         <Link
-          to={`/receipts/${first.id}/live`}
+          to={`/receipts/${first.id}`}
           className="flex items-center gap-3.5 rounded-full bg-ink py-2.5 pr-5 pl-2.5 text-ink-foreground shadow-[0_18px_40px_rgba(18,20,18,.25)] transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none sm:max-w-sm"
         >
           <span className="relative size-11 shrink-0">
@@ -66,9 +67,7 @@ export function ProcessingDock({ userId }: { userId: string }) {
           </span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-sm font-medium">{title}</span>
-            <span className="truncate font-mono text-xs text-ink-muted">
-              {detail} · Live ansehen
-            </span>
+            <span className="truncate font-mono text-xs text-ink-muted">{detail} · Ansehen</span>
           </span>
         </Link>
       </aside>

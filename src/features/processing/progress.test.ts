@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LineItem } from '@/features/review/review-logic'
-import { buildLog, summarize, toTapeItem } from './progress'
+import { buildLog, summarize } from './progress'
 import { ALL_DONE, displayTarget, formatClock, isFromUpload, serverStepIndex, STEP } from './steps'
 
 function item(overrides: Partial<LineItem> = {}): LineItem {
@@ -58,35 +58,6 @@ describe('formatClock', () => {
     expect(formatClock(0)).toBe('00:00.0')
     expect(formatClock(4_250)).toBe('00:04.2')
     expect(formatClock(75_900)).toBe('01:15.9')
-  })
-})
-
-const CATEGORY_LABELS: Record<string, string> = { cheese: 'Käse', fish: 'Fisch' }
-const label = (id: string) => CATEGORY_LABELS[id]
-
-describe('toTapeItem', () => {
-  it('formats price, category and amount', () => {
-    expect(toTapeItem(item(), label)).toMatchObject({
-      name: 'Bergkäse',
-      price: expect.stringMatching(/^6,90\s€$/),
-      category: 'Käse',
-      quantity: '0,3 kg',
-      co2eKg: 1.71,
-      flags: [],
-    })
-  })
-
-  it('marks estimated and learned amounts and what needs a look', () => {
-    expect(toTapeItem(item({ quantity_source: 'estimated' }), label)).toMatchObject({
-      quantity: '~0,3 kg',
-      flags: [{ label: 'Menge geschätzt', tone: 'warn' }],
-    })
-    expect(toTapeItem(item({ quantity_source: 'learned' }), label).flags).toEqual([
-      { label: 'gelernt', tone: 'neutral' },
-    ])
-    expect(
-      toTapeItem(item({ category_id: 'fish', quantity: null, unit: null, co2e_kg: null }), label),
-    ).toMatchObject({ quantity: null, flags: [{ label: 'Menge fehlt', tone: 'warn' }] })
   })
 })
 

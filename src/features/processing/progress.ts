@@ -1,49 +1,6 @@
 import type { ReceiptStatus } from '@/features/receipts/types'
-import {
-  ATTENTION_LABEL,
-  attentionReasons,
-  type LineItem,
-  UNIT_LABEL,
-} from '@/features/review/review-logic'
+import { attentionReasons, type LineItem } from '@/features/review/review-logic'
 import { ALL_DONE, formatKg, providerLabel, STEP } from './steps'
-
-const priceFormatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
-const quantityFormatter = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 })
-
-type TapeFlag = { label: string; tone: 'neutral' | 'warn' }
-
-export type TapeItem = {
-  id: string
-  name: string
-  price: string | null
-  category: string | null
-  quantity: string | null
-  co2eKg: number | null
-  flags: TapeFlag[]
-}
-
-export function toTapeItem(item: LineItem, categoryLabel: (id: string) => string | undefined) {
-  const estimated = item.quantity_source === 'estimated'
-  const flags: TapeFlag[] = attentionReasons(item).map((reason) => ({
-    label: reason === 'no_co2e' && item.quantity === null ? 'Menge fehlt' : ATTENTION_LABEL[reason],
-    tone: 'warn',
-  }))
-  if (item.quantity_source === 'learned') flags.unshift({ label: 'gelernt', tone: 'neutral' })
-
-  const tapeItem: TapeItem = {
-    id: item.id,
-    name: item.raw_text,
-    price: item.price === null ? null : priceFormatter.format(item.price),
-    category: item.category_id ? (categoryLabel(item.category_id) ?? null) : null,
-    quantity:
-      item.quantity === null || item.unit === null
-        ? null
-        : `${estimated ? '~' : ''}${quantityFormatter.format(item.quantity)} ${UNIT_LABEL[item.unit]}`,
-    co2eKg: item.co2e_kg,
-    flags,
-  }
-  return tapeItem
-}
 
 export type Summary = {
   count: number

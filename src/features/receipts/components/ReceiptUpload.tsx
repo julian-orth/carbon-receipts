@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
-import { KindTag } from '@/features/processing/components/StepRail'
+import { KindTag } from '@/features/processing/components/StepList'
 import { type LiveViewState, STEPS } from '@/features/processing/steps'
 import { cn } from '@/lib/utils'
 import { ACCEPT_ATTRIBUTE, validateReceiptFile } from '../file-validation'
@@ -63,7 +63,7 @@ function HowItWorks() {
               {String(index + 1).padStart(2, '0')}
             </span>
             <span className="flex-1">{step.activity}</span>
-            <KindTag kind={step.kind} />
+            <KindTag kind={step.kind} className="border-ink-line text-ink-muted" />
           </li>
         ))}
       </ol>
@@ -101,7 +101,7 @@ export function ReceiptUpload() {
       {
         onSuccess: ({ receipt }) => {
           const state: LiveViewState = { fromUpload: true }
-          void navigate(`/receipts/${receipt.id}/live`, { state })
+          void navigate(`/receipts/${receipt.id}`, { state })
         },
         onSettled: () => {
           if (inputRef.current) inputRef.current.value = ''

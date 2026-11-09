@@ -9,6 +9,10 @@ class ResizeObserverStub {
   disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub
+// …and no scrolling either.
+if (!('scrollIntoView' in Element.prototype)) {
+  Object.assign(Element.prototype, { scrollIntoView: () => {} })
+}
 
 afterEach(() => {
   cleanup()

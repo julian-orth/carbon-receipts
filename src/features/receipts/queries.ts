@@ -23,7 +23,7 @@ export function useUploadReceipt() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: uploadReceipt,
-    // The live view opens right away; it must find the new receipt in the cache.
+    // The receipt page opens right away; it must find the new receipt in the cache.
     onSuccess: ({ receipt }) =>
       queryClient.setQueryData<Receipt[]>(receiptKeys.list(), (list) =>
         applyReceiptChange(list, { eventType: 'INSERT', receipt }),

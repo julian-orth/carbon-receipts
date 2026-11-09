@@ -55,9 +55,9 @@ describe('ReceiptsPage', () => {
     expect(within(active).getByRole('listitem')).toHaveTextContent(
       /rewe\.jpg.*Schritt 2 von 5 · Die KI liest deinen Bon/,
     )
-    expect(within(active).getByRole('link', { name: /Live ansehen/ })).toHaveAttribute(
+    expect(within(active).getByRole('link', { name: /Fortschritt ansehen/ })).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/live$/),
+      expect.stringMatching(/^\/receipts\/[^/]+$/),
     )
 
     const list = screen.getByRole('list', { name: 'Deine Belege' })
@@ -98,7 +98,7 @@ describe('ReceiptsPage', () => {
     expect(await screen.findByText('Noch keine Belege')).toBeInTheDocument()
   })
 
-  it('uploads a valid file and opens the live view', async () => {
+  it('uploads a valid file and opens the receipt with its progress', async () => {
     mockedApi.fetchReceipts.mockResolvedValue([])
     const receipt = receiptFixture({ status: 'processing', processing_step: 'reading' })
     mockedApi.uploadReceipt.mockResolvedValue({ receipt, processingStarted: true })
@@ -115,7 +115,7 @@ describe('ReceiptsPage', () => {
         expect.anything(),
       ),
     )
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/receipts/${receipt.id}/live`))
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/receipts/${receipt.id}`))
     expect(router.state.location.state).toEqual({ fromUpload: true })
   })
 

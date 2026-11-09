@@ -42,18 +42,4 @@ export const routes: RouteObject[] = [
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-  {
-    // Full-screen live view while a receipt is processed – no app chrome.
-    element: <RequireAuth />,
-    errorElement: <RouteError />,
-    hydrateFallbackElement: <FullPageSpinner />,
-    children: [
-      {
-        path: 'receipts/:receiptId/live',
-        lazy: async () => ({
-          Component: (await import('@/features/processing/ProcessingPage')).ProcessingPage,
-        }),
-      },
-    ],
-  },
 ]

@@ -284,3 +284,22 @@ All items of a receipt are written in one insert and share `created_at`, so sort
 photo, so `line_items.position` stores the line on the receipt: the prompt asks for top-to-bottom
 order and `complete_receipt_processing` numbers the array `with ordinality`. Existing rows were
 backfilled with the old tie-break (their real order is unknown).
+
+## 023 – Analysis in a dialog over the receipt page; line editor and category picker
+
+Supersedes the full-screen live view of 021 (layout only; honest progress and pacing stay).
+
+- **One page per receipt:** `/receipts/:id` is where a receipt is checked; while it is analysed
+  the progress runs in a dialog on top (bottom sheet on phones). The live view's "printed
+  receipt" was a read-only copy of the review list – now the dialog hands over to the real,
+  editable list. Closing the dialog never stops anything; the page shows a placeholder with
+  "Fortschritt anzeigen", the dock shows progress elsewhere.
+- **Line editor:** lines in receipt order, collapsed to one row each; the first open line starts
+  expanded and saving moves on to the next open one. Forms stay mounted while collapsed so an
+  unsaved change survives, and they take server updates (`values` + `keepDirtyValues`), so a
+  correction learned on one line shows up on the others right away.
+- **Category picker:** an ARIA combobox (search field keeps focus, `aria-activedescendant`),
+  because options need icon, factor and an intensity hint, which `<select>` cannot render.
+  Suggestions come from the receipt text (label words + a small keyword list such as
+  Gouda → Käse); compound words only match at their start or end ("tomaten" ≠ "mate").
+  Intensity is shown for kg/litre factors only – per-piece factors are not comparable.

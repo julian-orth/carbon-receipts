@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { receiptKeys } from '@/features/receipts/query-keys'
-import { confirmReceipt, fetchImageUrl, fetchLineItems, fetchReceipt, saveLineItem } from './api'
+import { confirmReceipt, fetchImageUrl, fetchLineItems, saveLineItem } from './api'
 import { reviewKeys } from './query-keys'
-
-export function useReviewReceipt(id: string) {
-  return useQuery({ queryKey: reviewKeys.receipt(id), queryFn: () => fetchReceipt(id) })
-}
 
 export function useLineItems(receiptId: string, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
@@ -39,7 +35,6 @@ export function useConfirmReceipt(receiptId: string) {
     mutationFn: () => confirmReceipt(receiptId),
     onSettled: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: reviewKeys.receipt(receiptId) }),
         queryClient.invalidateQueries({ queryKey: reviewKeys.items(receiptId) }),
         queryClient.invalidateQueries({ queryKey: receiptKeys.all }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),

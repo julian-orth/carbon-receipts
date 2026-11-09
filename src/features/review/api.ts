@@ -1,15 +1,8 @@
 import { RECEIPTS_BUCKET } from '@/features/receipts/api'
-import type { Receipt } from '@/features/receipts/types'
 import { supabase } from '@/lib/supabase'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
 import type { EmissionCategory } from '@/features/categories/categories'
 import { type Learned, learnedUpdate, type LineItem } from './review-logic'
-
-export async function fetchReceipt(id: string): Promise<Receipt | null> {
-  const { data, error } = await supabase.from('receipts').select('*').eq('id', id).maybeSingle()
-  if (error) throw error
-  return data
-}
 
 export async function fetchLineItems(receiptId: string): Promise<LineItem[]> {
   const { data, error } = await supabase

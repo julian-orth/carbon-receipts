@@ -178,8 +178,8 @@ function InProgressItem({ receipt, now }: { receipt: Receipt; now: number }) {
           </Button>
         ) : (
           <Button asChild className="h-10 rounded-full px-4">
-            <Link to={`/receipts/${receipt.id}/live`}>
-              Live ansehen
+            <Link to={`/receipts/${receipt.id}`}>
+              Fortschritt ansehen
               <ArrowRight aria-hidden />
             </Link>
           </Button>

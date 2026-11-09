@@ -68,7 +68,7 @@ export function formatKg(kg: number): string {
   return kgFormatter.format(kg)
 }
 
-/** Router state set by the upload, so the live view can show the upload as step one. */
+/** Router state set by the upload, so the progress dialog can show the upload as step one. */
 export type LiveViewState = { fromUpload: true }
 
 export function isFromUpload(state: unknown): boolean {

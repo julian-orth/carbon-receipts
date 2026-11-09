@@ -1,33 +1,45 @@
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type LogEntry, type LogTone } from '../progress'
 import { formatClock } from '../steps'
 
 const TONE: Record<LogTone, string> = {
-  neutral: 'text-ink-foreground/80',
-  ok: 'text-brand',
-  warn: 'text-ink-warning',
-  danger: 'text-ink-danger',
+  neutral: 'text-foreground/80',
+  ok: 'text-success',
+  warn: 'text-warning-foreground',
+  danger: 'text-destructive',
 }
 
-export function ProcessingLog({ entries }: { entries: readonly LogEntry[] }) {
+/** Collapsible protocol: details for the curious, out of the way for everyone else. */
+export function ProcessingLog({
+  entries,
+  defaultOpen = false,
+}: {
+  entries: readonly LogEntry[]
+  defaultOpen?: boolean
+}) {
   return (
-    <section aria-labelledby="processing-log-title" className="border-t border-ink-line pt-5">
-      <h2
-        id="processing-log-title"
-        className="mb-3.5 font-mono text-xs font-medium tracking-widest text-ink-muted uppercase"
-      >
+    <details open={defaultOpen} className="group rounded-xl border bg-muted/40">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium select-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          aria-hidden
+          className="size-4 text-muted-foreground transition-transform group-open:rotate-90"
+        />
         Protokoll
-      </h2>
-      <div role="log" aria-labelledby="processing-log-title">
-        <ol className="flex flex-col gap-2.5 font-mono text-[13px] leading-snug">
+        <span className="font-normal text-muted-foreground">({entries.length})</span>
+      </summary>
+      <div role="log" aria-label="Protokoll" className="px-3 pb-3">
+        <ol className="flex flex-col gap-1.5 font-mono text-xs leading-snug">
           {entries.map((entry, index) => (
-            <li key={`${index}-${entry.text}`} className="flex animate-rise gap-3.5">
-              <span className="shrink-0 text-ink-subtle tabular">{formatClock(entry.at)}</span>
+            <li key={`${index}-${entry.text}`} className="flex gap-3">
+              <span className="shrink-0 text-muted-foreground tabular">
+                {formatClock(entry.at)}
+              </span>
               <span className={cn('min-w-0 break-words', TONE[entry.tone])}>{entry.text}</span>
             </li>
           ))}
         </ol>
       </div>
-    </section>
+    </details>
   )
 }

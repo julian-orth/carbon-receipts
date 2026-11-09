@@ -14,25 +14,35 @@ test('magic link → upload → AI extraction → review → dashboard', async (
     .getByLabel(/Foto auswählen/)
     .setInputFiles(path.join(import.meta.dirname, 'fixtures/receipt.jpg'))
 
-  // Live view: every step is shown, the result is printed, then on to the review.
-  await expect(page).toHaveURL(/\/receipts\/[0-9a-f-]+\/live$/)
-  await expect(page.getByRole('navigation', { name: 'Verarbeitungsschritte' })).toBeVisible()
-  const review = page.getByRole('link', { name: /Beleg prüfen/ })
-  await expect(review).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByRole('list', { name: 'Erkannte Positionen' })).toContainText('Gouda')
+  // The receipt page opens with the analysis in a dialog: every step, then the result.
+  await expect(page).toHaveURL(/\/receipts\/[0-9a-f-]+$/)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('list', { name: 'Verarbeitungsschritte' })).toBeVisible()
   // The mock receipt has an item without amount, so it asks for a look.
-  await expect(page.getByRole('log')).toContainText(/deinen Blick/)
-  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
-  expect(axe.violations.map((v) => v.id)).toEqual([])
-  await review.click()
+  await expect(dialog.getByRole('heading', { name: /deinen Blick/ })).toBeVisible({
+    timeout: 20_000,
+  })
+  const dialogAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze()
+  expect(dialogAxe.violations.map((v) => v.id)).toEqual([])
+  await dialog.getByRole('button', { name: /Positionen prüfen/ }).click()
+  await expect(dialog).toBeHidden()
 
+  // Same page, now the review: lines in receipt order, one editor open at a time.
   await expect(page.getByRole('heading', { level: 1, name: 'Beispielmarkt' })).toBeVisible()
+  const goudaToggle = page.getByRole('button', { name: /Gouda jung Scheiben/ })
+  if ((await goudaToggle.getAttribute('aria-expanded')) !== 'true') await goudaToggle.click()
   const gouda = page.getByRole('form', { name: 'Gouda jung Scheiben' })
   await gouda.getByLabel('Menge').fill('0,2')
-  await gouda.getByLabel('Einheit').selectOption('kg')
+  await gouda.getByRole('radio', { name: 'kg' }).check()
   await expect(gouda.getByText('1,14 kg CO₂e')).toBeVisible()
-  await gouda.getByRole('button', { name: 'Speichern' }).click()
-  await expect(gouda.getByText('Geprüft')).toBeVisible()
+  const reviewAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze()
+  expect(reviewAxe.violations.map((v) => v.id)).toEqual([])
+  await gouda.getByRole('button', { name: /Speichern/ }).click()
+  await expect(goudaToggle).toContainText('Geprüft')
 
   await page.getByRole('button', { name: 'Beleg bestätigen' }).click()
   await expect(page.getByText('Beleg bestätigt')).toBeVisible()
