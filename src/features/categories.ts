@@ -17,6 +17,8 @@ export const GROUP_LABEL: Record<string, string> = {
   staples: 'Grundnahrungsmittel',
   fats_sweets: 'Fette & Süßes',
   beverages: 'Getränke',
+  ready_meals: 'Fertiggerichte',
+  pet: 'Tiernahrung',
   fuel: 'Kraftstoff',
   other: 'Sonstiges',
 }

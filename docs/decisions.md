@@ -225,3 +225,18 @@ the package, not on the receipt, so only 3 of 13 items got a CO₂e value.
   "Pfandartikel".
 - Limitation: learning is keyed by the normalized product name, so the same product with a
   different abbreviation at another store ("Ferr.Duplo" vs. "FERRERO DUPLO") is learned separately.
+
+## 019 – Ready meals per portion, pet food with a weaker source
+
+- **Ready meals** use ifeu 2020, table 6 (dishes "ready on the plate", kg CO₂e per portion), by main
+  ingredient: beef 2.6, meat 1.6, fish 0.6, vegetarian 1.0, vegan 0.9. The unit is one portion
+  (`piece`); the model estimates portions (e.g. an 800 g can ≈ 2). Limitation: the ifeu dishes are
+  home-cooked for a 4-person household, not industrially produced.
+- **Pet food** uses the French government calculator Nos Gestes Climat (ADEME): 2.5 kg CO₂e/kg as
+  the average for cat food (dry 1.5, premium/wet 4.5), based on "The global environmental paw print
+  of pet food" (2020). This is weaker than the ifeu values: no German study, no per-kg value for dog
+  food, and the source page is not fully consistent about its average. It is still better than
+  leaving pet food out of the footprint.
+- Prompt context: section headers on the receipt ("SB - Wurst") now inform category and pack size,
+  and deposit lines hint at the number of bottles. Plausibility rules such as "price ÷ amount must be
+  a realistic price per kg" are only partly followed by the model – estimates stay flagged for review.

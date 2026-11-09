@@ -40,13 +40,24 @@ Regeln:
   gehören zu genau einer Position. Ordne sie der Position zu, deren Preis Menge × Einzelpreis ergibt,
   und trage die Menge in quantity/unit ein – nicht in raw_text.
 - Wenn die Menge nur im Produktnamen steht (z. B. "Milch 1L"), lass quantity und unit leer.
-- Steht gar keine Menge auf dem Bon, schätze die übliche Packungsgröße des Produkts in Deutschland
-  als estimated_quantity/estimated_unit (z. B. Kinder Bueno 43 g, Kaffee gemahlen 500 g, Quark 250 g).
-  Nutze Preis und Pfand als Hinweis (Getränk mit 0,25 € Pfand: Einwegflasche, oft 1,5 l). Gewichtsware
-  (Fleisch, Käse an der Theke, Obst lose) ohne Gewichtsangabe: nur schätzen, wenn der Preis es nahelegt.
+- Abschnittsüberschriften auf dem Bon (z. B. "SB - Wurst", "Backshop", "Getränke") sind keine Positionen,
+  aber Kontext: "Hähnchenbrustfilet" unter "SB - Wurst" ist Aufschnitt (meist 100–150 g), kein rohes Fleisch.
+- Steht gar keine Menge auf dem Bon, schätze die Packungsgröße als estimated_quantity/estimated_unit.
+  Prüfe die Schätzung am Preis: Preis ÷ Menge muss ein realistischer Regalpreis pro kg/l in Deutschland sein
+  (z. B. Schokolade 8–25 €/kg, Aufschnitt 10–30 €/kg, Kaffee 8–20 €/kg). Passt das nicht, ist es eine andere
+  Packung (Mehrfachpackung, größere oder kleinere Einheit).
+  Beispiele: Kinder Bueno 1,49 € → 43 g (eine Packung mit 2 Riegeln); Duplo einzeln ca. 18 g, im Handel meist
+  als Mehrfachpackung; Kaffee gemahlen 3,75 € → 500 g.
+- Pfand verrät die Anzahl der Flaschen/Dosen: 0,25 € je Einweg-Flasche oder Dose, 0,08/0,15 € je Mehrweg.
+  Ordne die Anzahl dem passenden Getränk zu (z. B. 1,00 € Pfand bei einer Cola-Position → 4 Flaschen) und
+  schätze die Gesamtmenge (z. B. 4 × 1,0 l), wieder plausibel zum Preis.
 - Löse Abkürzungen auf, bevor du die Kategorie wählst (z. B. "Ferr.Duplo" = Ferrero Duplo → Schokolade,
   "Jac.Krönung gemah." = Jacobs Krönung gemahlen → Kaffee).
-- Nicht-Lebensmittel (Tierbedarf, Drogerie, Haushalt) und Fertiggerichte ohne passende Kategorie: category_slug null.
+- Fertiggerichte (Eintöpfe, Dosengerichte, Tiefkühlgerichte, Lasagne …) bekommen eine ready-meal-Kategorie nach
+  Hauptzutat. Ihr Faktor gilt pro Portion: Menge in Portionen als "stk" (z. B. Dose 800 g ≈ 2 Portionen,
+  Tiefkühl-Lasagne 400 g ≈ 1 Portion), wieder plausibel zum Preis.
+- Tiernahrung bekommt pet-food mit Menge in kg (z. B. Nassfutter-Multipack 12 × 85 g = 1,02 kg).
+- Andere Nicht-Lebensmittel (Drogerie, Haushalt, Tierzubehör): category_slug null.
 - Wähle category_slug nur aus dieser Liste, sonst null:
 ${categoryList}
 - confidence unter 0.7, wenn die Kategorie nur geraten ist oder der Text schwer lesbar ist.`

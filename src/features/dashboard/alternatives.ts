@@ -30,6 +30,8 @@ export const ALTERNATIVES: Record<string, AlternativeTarget> = {
   butter: { kind: 'category', slug: 'margarine' },
   milk: { kind: 'category', slug: 'oat-drink' },
   rice: { kind: 'category', slug: 'potatoes' },
+  'ready-meal-beef': { kind: 'category', slug: 'ready-meal-vegetarian' },
+  'ready-meal-meat': { kind: 'category', slug: 'ready-meal-vegetarian' },
   cheese: {
     kind: 'product',
     label: 'Veganer Käse-Ersatz',
