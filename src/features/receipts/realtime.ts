@@ -1,4 +1,7 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -55,7 +58,7 @@ export function useReceiptsRealtime(userId: string) {
         },
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
           void queryClient.invalidateQueries({ queryKey: receiptKeys.list() })
         }
       })

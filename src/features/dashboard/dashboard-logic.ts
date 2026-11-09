@@ -30,7 +30,7 @@ export type FactorRef = {
 export type RangeMonths = 3 | 6 | 12
 
 /** First day of the month, as ISO date (UTC-free, local calendar). */
-export function monthKey(date: Date): string {
+function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`
 }
 
@@ -52,7 +52,7 @@ export function buildMonthSeries(
   count: number,
 ): MonthPoint[] {
   const totals = new Map(
-    rows.flatMap((r) => (r.month ? [[r.month, Number(r.total_co2e_kg ?? 0)] as const] : [])),
+    rows.flatMap((r) => (r.month ? [[r.month, r.total_co2e_kg ?? 0] as const] : [])),
   )
   const current = monthKey(today)
   return lastMonths(today, count).map((month) => ({
@@ -70,7 +70,7 @@ export function sumByGroup(rows: readonly GroupRow[], fromMonth: string): GroupT
   for (const row of rows) {
     if (!row.month || row.month < fromMonth) continue
     const group = row.category_group ?? 'other'
-    totals.set(group, (totals.get(group) ?? 0) + Number(row.sum_co2e_kg ?? 0))
+    totals.set(group, (totals.get(group) ?? 0) + (row.sum_co2e_kg ?? 0))
   }
   const sum = [...totals.values()].reduce((a, b) => a + b, 0)
   return [...totals.entries()]
@@ -148,7 +148,7 @@ function resolveTarget(target: AlternativeTarget, factors: ReadonlyMap<string, F
     ? {
         label: factor.label,
         unit: factor.unit,
-        co2ePerUnit: Number(factor.co2e_per_unit),
+        co2ePerUnit: factor.co2e_per_unit,
         source: factor.source,
         sourceUrl: factor.source_url,
       }
@@ -175,11 +175,11 @@ export function suggestAlternatives(
     const target = resolveTarget(targetDef, bySlug)
     if (!target || target.unit !== original.unit) continue
 
-    const savingPerUnit = roundCo2e(Number(original.co2e_per_unit) - target.co2ePerUnit)
+    const savingPerUnit = roundCo2e(original.co2e_per_unit - target.co2ePerUnit)
     if (savingPerUnit <= 0) continue
     const savingKg =
       item.quantity !== null && item.unit === original.unit && item.co2e_kg !== null
-        ? roundCo2e(Number(item.co2e_kg) - item.quantity * target.co2ePerUnit)
+        ? roundCo2e(item.co2e_kg - item.quantity * target.co2ePerUnit)
         : null
 
     const suggestion: AlternativeSuggestion = {

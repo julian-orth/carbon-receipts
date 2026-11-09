@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '@/app/routes'
 import { supabase } from '@/lib/supabase'
-import { authenticated } from '@/test/auth'
+import { authenticated, testSession, testUser } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
 
 vi.mock('@/features/dashboard/api')
-vi.mock('@/features/categories-api')
+vi.mock('@/features/categories/api')
 
 const signInWithOtp = vi.spyOn(supabase.auth, 'signInWithOtp')
 const signInWithPassword = vi.spyOn(supabase.auth, 'signInWithPassword')
@@ -81,9 +81,9 @@ describe('LoginPage', () => {
 
   it('signs in to the demo account', async () => {
     signInWithPassword.mockResolvedValue({
-      data: { user: null, session: null },
+      data: { user: testUser, session: testSession },
       error: null,
-    } as never)
+    })
     const user = userEvent.setup()
     renderLogin()
 

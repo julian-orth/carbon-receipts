@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchCategories } from './categories-api'
+import { fetchCategories } from './api'
 import type { Tables } from '@/types/db-helpers'
 
 export type EmissionCategory = Pick<
@@ -7,7 +7,7 @@ export type EmissionCategory = Pick<
   'id' | 'slug' | 'label' | 'unit' | 'co2e_per_unit' | 'category_group' | 'source' | 'source_url'
 >
 
-export const categoryKeys = { all: ['emission-categories'] as const }
+const categoryKeys = { all: ['emission-categories'] as const }
 
 export const GROUP_LABEL: Record<string, string> = {
   fruit_vegetables: 'Obst & Gemüse',

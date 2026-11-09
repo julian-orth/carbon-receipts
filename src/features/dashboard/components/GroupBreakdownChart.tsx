@@ -1,4 +1,4 @@
-import { GROUP_LABEL } from '@/features/categories'
+import { GROUP_LABEL } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
 import type { GroupTotal } from '../dashboard-logic'
 

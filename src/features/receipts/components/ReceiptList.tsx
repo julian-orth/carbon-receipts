@@ -4,7 +4,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, formatDateTime } from '@/lib/format'
+import { useNow } from '@/lib/use-now'
 import { useReceipts, useRetryReceipt, useStartProcessing } from '../queries'
+import { canStartProcessing } from '../status'
 import type { Receipt } from '../types'
 import { DeleteReceiptButton } from './DeleteReceiptButton'
 import { ReceiptStatusBadge } from './ReceiptStatusBadge'
@@ -15,6 +17,8 @@ function receiptLabel(receipt: Receipt): string {
 
 export function ReceiptList() {
   const receipts = useReceipts()
+  // One clock for the whole list: enables "Analyse starten" once a run looks stuck.
+  const now = useNow(30_000)
 
   if (receipts.isPending) {
     return (
@@ -55,13 +59,13 @@ export function ReceiptList() {
   return (
     <ul aria-labelledby="receipts-list-title" className="divide-y rounded-lg border">
       {receipts.data.map((receipt) => (
-        <ReceiptListItem key={receipt.id} receipt={receipt} />
+        <ReceiptListItem key={receipt.id} receipt={receipt} now={now} />
       ))}
     </ul>
   )
 }
 
-function ReceiptListItem({ receipt }: { receipt: Receipt }) {
+function ReceiptListItem({ receipt, now }: { receipt: Receipt; now: number }) {
   const retry = useRetryReceipt()
   const start = useStartProcessing()
   const label = receiptLabel(receipt)
@@ -103,7 +107,7 @@ function ReceiptListItem({ receipt }: { receipt: Receipt }) {
             <Link to={`/receipts/${receipt.id}`}>Prüfen</Link>
           </Button>
         )}
-        {receipt.status === 'pending' && (
+        {canStartProcessing(receipt, now) && (
           <Button
             variant="outline"
             size="sm"

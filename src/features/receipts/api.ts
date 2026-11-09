@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { validateReceiptFile } from './file-validation'
+import { prepareImage } from './image-resize'
 import type { Receipt } from './types'
 
 export const RECEIPTS_BUCKET = 'receipts'
@@ -23,7 +24,13 @@ export async function startProcessing(receiptId: string): Promise<void> {
     body: { receipt_id: receiptId },
   })
   if (!error) return
-  if (error instanceof FunctionsHttpError && (error.context as Response).status === 409) return
+  if (
+    error instanceof FunctionsHttpError &&
+    error.context instanceof Response &&
+    error.context.status === 409
+  ) {
+    return
+  }
   throw error
 }
 
@@ -32,14 +39,16 @@ export async function startProcessing(receiptId: string): Promise<void> {
  * (status `pending`). If the row cannot be created, the file is removed again.
  */
 export async function uploadReceipt({ file, userId }: { file: File; userId: string }) {
-  const validation = validateReceiptFile(file)
+  // Large phone photos are downscaled first; the size limit applies to what is uploaded.
+  const prepared = await prepareImage(file)
+  const validation = validateReceiptFile(prepared)
   if (!validation.ok) throw new Error(validation.error)
   const { kind } = validation
 
   const path = `${userId}/${crypto.randomUUID()}.${kind.extension}`
   const upload = await supabase.storage
     .from(RECEIPTS_BUCKET)
-    .upload(path, file, { contentType: kind.contentType, upsert: false })
+    .upload(path, prepared, { contentType: kind.contentType, upsert: false })
   if (upload.error) throw upload.error
 
   const { data, error } = await supabase

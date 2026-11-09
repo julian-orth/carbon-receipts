@@ -1,13 +1,13 @@
 import { calculateCo2e, type CalculationFailure } from '@shared/emissions/calculate.ts'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
 import { parseDecimal } from '@shared/emissions/units.ts'
-import type { EmissionCategory } from '@/features/categories'
+import type { EmissionCategory } from '@/features/categories/categories'
 import type { Tables } from '@/types/db-helpers'
 
 export type LineItem = Tables<'line_items'>
 
 /** Below this the model's category is shown as uncertain. */
-export const CONFIDENCE_THRESHOLD = 0.7
+const CONFIDENCE_THRESHOLD = 0.7
 
 export const UNIT_LABEL: Record<EmissionUnit, string> = {
   kg: 'kg',
@@ -38,7 +38,7 @@ export function computeCo2e(draft: ItemDraft, category: EmissionCategory | undef
   if (!category) return { ok: false, message: 'Keine Kategorie' }
   const result = calculateCo2e(draft, {
     unit: category.unit,
-    co2ePerUnit: Number(category.co2e_per_unit),
+    co2ePerUnit: category.co2e_per_unit,
   })
   if (!result.ok) return { ok: false, message: FAILURE_MESSAGE[result.reason](category) }
   return {

@@ -44,7 +44,7 @@ export function GoalCard({ goal, currentKg }: { goal: MonthlyGoal | null; curren
 
   if (editing) {
     return (
-      <form onSubmit={onSubmit} noValidate className="space-y-3">
+      <form onSubmit={(event) => void onSubmit(event)} noValidate className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor={inputId}>Monatsziel in kg CO₂e</Label>
           <Input
@@ -82,7 +82,7 @@ export function GoalCard({ goal, currentKg }: { goal: MonthlyGoal | null; curren
   }
 
   if (!goal) return null
-  const target = Number(goal.target_co2e_kg)
+  const target = goal.target_co2e_kg
   const progress = goalProgress(currentKg, target)
   const status = STATUS[progress.status]
   const Icon = status.icon

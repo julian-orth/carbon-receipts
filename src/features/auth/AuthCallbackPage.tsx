@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useAuth } from './auth-context'
-import { FullPageSpinner } from './FullPageSpinner'
+import { FullPageSpinner } from '@/components/FullPageSpinner'
 import { consumeRedirect } from './redirect'
 
 /** Errors are returned in the query (PKCE) or in the hash (implicit flow). */

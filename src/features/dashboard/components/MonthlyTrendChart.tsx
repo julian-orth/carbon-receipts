@@ -16,9 +16,13 @@ import { ChartTable } from './ChartTable'
 
 const axisTick = { fill: 'var(--muted-foreground)', fontSize: 12 }
 
+function isMonthPoint(value: unknown): value is MonthPoint {
+  return typeof value === 'object' && value !== null && 'month' in value && 'totalKg' in value
+}
+
 function TrendTooltip({ active, payload }: TooltipContentProps) {
-  const point = payload?.[0]?.payload as MonthPoint | undefined
-  if (!active || !point) return null
+  const point: unknown = payload?.[0]?.payload
+  if (!active || !isMonthPoint(point)) return null
   return (
     <div className="rounded-md border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
       <p className="font-medium">
@@ -61,7 +65,7 @@ export function MonthlyTrendChart({
               axisLine={false}
               tick={axisTick}
               width={44}
-              tickFormatter={(value: number) => `${value.toLocaleString('de-DE')}`}
+              tickFormatter={(value: number) => value.toLocaleString('de-DE')}
             />
             <Tooltip content={TrendTooltip} cursor={{ fill: 'var(--muted)' }} />
             {goalKg !== null && (

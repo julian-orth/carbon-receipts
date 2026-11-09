@@ -8,7 +8,7 @@ import { routes } from './routes'
 const LAZY_ROUTE = { timeout: 5000 }
 
 vi.mock('@/features/dashboard/api')
-vi.mock('@/features/categories-api')
+vi.mock('@/features/categories/api')
 
 describe('routes', () => {
   it('renders the dashboard for signed-in users', async () => {

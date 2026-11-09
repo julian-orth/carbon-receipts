@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { EmissionCategory } from '@/features/categories'
+import type { EmissionCategory } from '@/features/categories/categories'
 import {
   attentionReasons,
   computeCo2e,

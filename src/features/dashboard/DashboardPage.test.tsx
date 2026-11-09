@@ -1,15 +1,15 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { EmissionCategory } from '@/features/categories'
-import * as categoriesApi from '@/features/categories-api'
+import type { EmissionCategory } from '@/features/categories/categories'
+import * as categoriesApi from '@/features/categories/api'
 import { authenticated } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
 import * as api from './api'
 import { DashboardPage } from './DashboardPage'
 
 vi.mock('./api')
-vi.mock('@/features/categories-api')
+vi.mock('@/features/categories/api')
 
 const mockedApi = vi.mocked(api)
 const today = new Date(2026, 10, 7) // 7 Nov 2026

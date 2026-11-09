@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './auth-context'
-import { FullPageSpinner } from './FullPageSpinner'
+import { FullPageSpinner } from '@/components/FullPageSpinner'
 
-export type LoginLocationState = { from?: string }
+type LoginLocationState = { from?: string }
 
 /** Layout route: renders children only for signed-in users. */
 export function RequireAuth() {

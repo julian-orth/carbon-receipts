@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
-import { type EmissionCategory, GROUP_LABEL } from '@/features/categories'
+import { type EmissionCategory, GROUP_LABEL } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
 import { cn } from '@/lib/utils'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
@@ -71,7 +71,7 @@ export function LineItemRow({
   const values = useWatch({ control: form.control })
   const category = values.categoryId ? categoriesById.get(values.categoryId) : undefined
   const quantity = parseQuantityInput(values.quantity ?? '')
-  const unit = values.unit ? (values.unit as EmissionUnit) : null
+  const unit = values.unit === undefined || values.unit === '' ? null : values.unit
   const preview = computeCo2e(
     { categoryId: values.categoryId || null, quantity: quantity ?? null, unit, price: item.price },
     category,
@@ -114,7 +114,11 @@ export function LineItemRow({
         reasons.length > 0 && 'border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/20',
       )}
     >
-      <form onSubmit={onSubmit} aria-labelledby={`${baseId}-title`} className="space-y-3">
+      <form
+        onSubmit={(event) => void onSubmit(event)}
+        aria-labelledby={`${baseId}-title`}
+        className="space-y-3"
+      >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 id={`${baseId}-title`} className="font-medium">

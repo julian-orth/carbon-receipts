@@ -5,5 +5,5 @@ import type { EmissionFactor } from '@shared/emissions/types.ts'
 export function toEmissionFactor(
   category: Pick<Tables<'emission_categories'>, 'unit' | 'co2e_per_unit'>,
 ): EmissionFactor {
-  return { unit: category.unit, co2ePerUnit: Number(category.co2e_per_unit) }
+  return { unit: category.unit, co2ePerUnit: category.co2e_per_unit }
 }

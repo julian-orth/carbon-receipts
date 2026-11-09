@@ -14,19 +14,23 @@ import { useAuth } from './auth-context'
 import { getAuthErrorMessage } from './errors'
 import { demoCredentials, useDemoSignIn, useSendMagicLink } from './mutations'
 import { consumeRedirect, rememberRedirect, sanitizeRedirect } from './redirect'
-import type { LoginLocationState } from './RequireAuth'
 
 const loginSchema = z.object({
   email: z.email('Bitte gib eine gültige E-Mail-Adresse ein.').trim().toLowerCase(),
 })
 type LoginForm = z.infer<typeof loginSchema>
 
+/** Router state is untyped (`any`); read `from` without trusting its shape. */
+function readFrom(state: unknown): unknown {
+  return typeof state === 'object' && state !== null && 'from' in state ? state.from : undefined
+}
+
 const MAILPIT_URL = 'http://127.0.0.1:54324'
 
 export function LoginPage() {
   const auth = useAuth()
   const location = useLocation()
-  const from = sanitizeRedirect((location.state as LoginLocationState | null)?.from)
+  const from = sanitizeRedirect(readFrom(location.state))
 
   const sendMagicLink = useSendMagicLink()
   const demoSignIn = useDemoSignIn()
@@ -102,7 +106,7 @@ export function LoginPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form noValidate onSubmit={onSubmit} className="space-y-4">
+              <form noValidate onSubmit={(event) => void onSubmit(event)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor={emailId}>E-Mail-Adresse</Label>
                   <Input

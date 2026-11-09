@@ -1,30 +1,29 @@
 import { expect, type Page } from '@playwright/test'
+import { z } from 'zod'
 
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324'
-
-export const demo = { email: 'demo@carbon-receipts.app', password: 'demo-carbon-receipts' }
 
 export function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 }
 
-type MailpitSearch = { messages: Array<{ ID: string }> }
-type MailpitMessage = { Text: string }
+const mailpitSearch = z.object({ messages: z.array(z.object({ ID: z.string() })) })
+const mailpitMessage = z.object({ Text: z.string() })
 
 /** Polls Mailpit for the magic link sent to `email`. */
-export async function fetchMagicLink(email: string): Promise<string> {
+async function fetchMagicLink(email: string): Promise<string> {
   let link: string | undefined
   await expect
     .poll(
       async () => {
-        const search = (await (
-          await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)
-        ).json()) as MailpitSearch
+        const searchResponse = await fetch(
+          `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`,
+        )
+        const search = mailpitSearch.parse(await searchResponse.json())
         const id = search.messages[0]?.ID
         if (!id) return undefined
-        const message = (await (
-          await fetch(`${MAILPIT}/api/v1/message/${id}`)
-        ).json()) as MailpitMessage
+        const messageResponse = await fetch(`${MAILPIT}/api/v1/message/${id}`)
+        const message = mailpitMessage.parse(await messageResponse.json())
         link = /https?:\/\/\S+\/auth\/v1\/verify\S+/.exec(message.Text)?.[0]
         return link
       },

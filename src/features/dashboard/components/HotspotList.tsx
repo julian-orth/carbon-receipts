@@ -10,7 +10,7 @@ export function HotspotList({ hotspots }: { hotspots: HotspotRow[] }) {
       </p>
     )
   }
-  const max = Math.max(...hotspots.map((h) => Number(h.co2e_kg ?? 0)), 0.0001)
+  const max = Math.max(...hotspots.map((h) => h.co2e_kg ?? 0), 0.0001)
   return (
     <ol className="space-y-3">
       {hotspots.map((item, index) => (
@@ -24,13 +24,13 @@ export function HotspotList({ hotspots }: { hotspots: HotspotRow[] }) {
               )}
             </span>
             <span className="shrink-0 font-medium tabular-nums">
-              {formatCo2e(Number(item.co2e_kg ?? 0))}
+              {formatCo2e(item.co2e_kg ?? 0)}
             </span>
           </div>
           <div className="h-1.5 rounded-full bg-muted" aria-hidden>
             <div
               className="h-full rounded-full bg-[var(--viz-series-1)]"
-              style={{ width: `${(Number(item.co2e_kg ?? 0) / max) * 100}%` }}
+              style={{ width: `${((item.co2e_kg ?? 0) / max) * 100}%` }}
             />
           </div>
           {item.purchased_on && (

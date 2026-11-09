@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router'
 import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
-import { FullPageSpinner } from '@/features/auth/FullPageSpinner'
+import { FullPageSpinner } from '@/components/FullPageSpinner'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { NotFoundPage } from './NotFoundPage'

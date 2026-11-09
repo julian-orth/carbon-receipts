@@ -2,7 +2,7 @@ import { RECEIPTS_BUCKET } from '@/features/receipts/api'
 import type { Receipt } from '@/features/receipts/types'
 import { supabase } from '@/lib/supabase'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
-import type { EmissionCategory } from '@/features/categories'
+import type { EmissionCategory } from '@/features/categories/categories'
 import { type Learned, learnedUpdate, type LineItem } from './review-logic'
 
 export async function fetchReceipt(id: string): Promise<Receipt | null> {

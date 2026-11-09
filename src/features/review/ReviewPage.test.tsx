@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '@/app/routes'
-import type { EmissionCategory } from '@/features/categories'
-import * as categoriesApi from '@/features/categories-api'
+import type { EmissionCategory } from '@/features/categories/categories'
+import * as categoriesApi from '@/features/categories/api'
 import { receiptFixture } from '@/features/receipts/test-fixtures'
 import { authenticated } from '@/test/auth'
 import { renderRoutes } from '@/test/render'
@@ -11,7 +11,7 @@ import * as api from './api'
 import type { LineItem } from './review-logic'
 
 vi.mock('./api')
-vi.mock('@/features/categories-api')
+vi.mock('@/features/categories/api')
 
 const mockedApi = vi.mocked(api)
 

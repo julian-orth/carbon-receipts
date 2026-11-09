@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useEmissionCategories } from '@/features/categories'
+import { useEmissionCategories } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
 import { AlternativesList } from './components/AlternativesList'
 import { DashboardCard } from './components/DashboardCard'
@@ -99,7 +99,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const groupTotals = sumByGroup(groups.data ?? [], fromMonth)
   const alternatives = suggestAlternatives(hotspots.data ?? [], categories.data ?? [])
   const topHotspots = (hotspots.data ?? []).slice(0, 5)
-  const goalKg = goal.data ? Number(goal.data.target_co2e_kg) : null
+  const goalKg = goal.data ? goal.data.target_co2e_kg : null
 
   if (rangeTotal === 0 && (hotspots.data ?? []).length === 0) {
     return (
