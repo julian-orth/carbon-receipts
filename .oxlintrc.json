@@ -30,7 +30,14 @@
       {
         "allow": ["**/*.css", "@testing-library/jest-dom/vitest"]
       }
-    ]
+    ],
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/switch-exhaustiveness-check": "error"
   },
   "overrides": [
     {

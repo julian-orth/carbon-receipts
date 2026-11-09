@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "lint": "oxlint --max-warnings=0",
-    "lint:fix": "oxlint --fix",
+    "lint": "oxlint --type-aware --max-warnings=0",
+    "lint:fix": "oxlint --type-aware --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
@@ -22,7 +22,8 @@
     "db:types": "supabase gen types typescript --local --schema public < /dev/null > supabase/functions/_shared/database.types.ts && prettier --write supabase/functions/_shared/database.types.ts",
     "functions:check": "cd supabase/functions/process-receipt && npx --yes deno@2 check index.ts",
     "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "knip": "knip"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -55,7 +56,9 @@
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.1.0",
     "jsdom": "^29.1.1",
+    "knip": "^6.44.2",
     "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2006",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.5",
