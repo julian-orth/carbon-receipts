@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (id, email) values
   ('77777777-7777-7777-7777-777777777777', 'proc@example.com'),
@@ -64,6 +64,12 @@ select results_eq(
      from public.receipts where id = 'eeeeeeee-0000-0000-0000-000000000001' $$,
   $$ values ('review', 'REWE', 2) $$,
   'receipt moved to review with its line items'
+);
+select results_eq(
+  $$ select raw_text, position from public.line_items
+     where receipt_id = 'eeeeeeee-0000-0000-0000-000000000001' order by position $$,
+  $$ values ('Milch 1L', 1), ('Brot', 2) $$,
+  'items keep the order of the receipt'
 );
 select results_eq(
   $$ select processing_step::text, ai_provider from public.receipts where id = 'eeeeeeee-0000-0000-0000-000000000001' $$,

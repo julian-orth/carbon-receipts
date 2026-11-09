@@ -163,6 +163,7 @@ export type Database = {
           created_at: string
           id: string
           normalized_name: string | null
+          position: number
           price: number | null
           quantity: number | null
           quantity_source: string | null
@@ -180,6 +181,7 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_name?: string | null
+          position?: number
           price?: number | null
           quantity?: number | null
           quantity_source?: string | null
@@ -197,6 +199,7 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_name?: string | null
+          position?: number
           price?: number | null
           quantity?: number | null
           quantity_source?: string | null

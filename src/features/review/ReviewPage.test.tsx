@@ -57,6 +57,7 @@ function item(overrides: Partial<LineItem>): LineItem {
     id: crypto.randomUUID(),
     receipt_id: 'r1',
     user_id: 'u',
+    position: 1,
     raw_text: 'X',
     normalized_name: 'x',
     quantity: null,

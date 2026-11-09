@@ -35,6 +35,7 @@ export function buildExtractionRequest(
 }
 
 Regeln:
+- Gib die Positionen in der Reihenfolge zurück, in der sie auf dem Bon stehen (von oben nach unten).
 - Ignoriere Summen, Zwischensummen, MwSt., Zahlungsart, Rückgeld, Pfand, Leergut und Rabatte.
 - Mengen- und Gewichtszeilen ohne eigenen Artikelnamen (z. B. "2 x 0,89" oder "1,186 kg x 1,41 EUR/kg")
   gehören zu genau einer Position. Ordne sie der Position zu, deren Preis Menge × Einzelpreis ergibt,

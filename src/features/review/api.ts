@@ -16,6 +16,8 @@ export async function fetchLineItems(receiptId: string): Promise<LineItem[]> {
     .from('line_items')
     .select('*')
     .eq('receipt_id', receiptId)
+    // Receipt order (position), so the list reads like the photo.
+    .order('position')
     .order('created_at')
     .order('id')
   if (error) throw error

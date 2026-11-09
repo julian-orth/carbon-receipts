@@ -276,3 +276,11 @@ the package, not on the receipt, so only 3 of 13 items got a CO₂e value.
   `prefers-reduced-motion`.
 - **Bundle:** chunk groups no longer capture shared dependencies recursively; before, every page
   preloaded the chart library (~84 kB gzip) through a shared helper.
+
+## 022 – Line items keep the receipt order
+
+All items of a receipt are written in one insert and share `created_at`, so sorting by
+`(created_at, id)` was effectively random. Correcting is easiest when the list reads like the
+photo, so `line_items.position` stores the line on the receipt: the prompt asks for top-to-bottom
+order and `complete_receipt_processing` numbers the array `with ordinality`. Existing rows were
+backfilled with the old tie-break (their real order is unknown).
