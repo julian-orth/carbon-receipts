@@ -52,3 +52,23 @@ export function toPaperLine(item: LineItem): PaperLine {
     needsLook: attentionReasons(item).length > 0,
   }
 }
+
+/** Delay between printed lines and the time until the last one has landed. */
+export function printSchedule(
+  count: number,
+  {
+    budgetMs,
+    maxGapMs,
+    minGapMs = 60,
+    lineMs = 450,
+  }: {
+    budgetMs: number
+    maxGapMs: number
+    minGapMs?: number
+    lineMs?: number
+  },
+): { gapMs: number; totalMs: number } {
+  if (count <= 0 || budgetMs <= 0) return { gapMs: 0, totalMs: 0 }
+  const gapMs = Math.round(Math.min(maxGapMs, Math.max(minGapMs, budgetMs / count)))
+  return { gapMs, totalMs: gapMs * (count - 1) + lineMs }
+}

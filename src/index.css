@@ -4,7 +4,8 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
 
-@custom-variant dark (&:is(.dark *));
+/* `.light-scope` keeps a light island inside the dark theme (the receipt paper). */
+@custom-variant dark (&:is(.dark *):not(:is(.light-scope, .light-scope *)));
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -206,6 +207,23 @@
   --sidebar-accent-foreground: #eef0ea;
   --sidebar-border: #262b26;
   --sidebar-ring: #c8f169;
+}
+
+/* Light tokens for content that stays light in dark mode (the receipt paper). */
+.dark .light-scope {
+  color-scheme: light;
+  --foreground: #121412;
+  --card: #ffffff;
+  --muted: #ebebe5;
+  --muted-foreground: #5a605a;
+  --border: #e1e1da;
+  --input: #d6d6ce;
+  --ring: #121412;
+  --primary: #121412;
+  --primary-foreground: #f5f5f1;
+  --warning: #b07a12;
+  --warning-soft: #fbefd0;
+  --warning-foreground: #4a3405;
 }
 
 @layer base {

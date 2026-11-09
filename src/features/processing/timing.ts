@@ -10,3 +10,10 @@ export const COUNT_UP_MS = 900
 
 /** How long the fill of a running step takes to creep towards 90 %. Reading is the slow one. */
 export const CREEP_MS = [1500, 14_000, 1500, 1500, 1500] as const
+
+/**
+ * Printing the recognised lines: one after another at a readable pace, but a long receipt
+ * must not take forever – the gap shrinks so all lines fit into the budget.
+ */
+export const PRINT_BUDGET_MS = 3600
+export const PRINT_MAX_GAP_MS = 260

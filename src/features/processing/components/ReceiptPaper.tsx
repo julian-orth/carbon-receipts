@@ -1,8 +1,9 @@
-import { Check, TriangleAlert } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { EmissionCategory } from '@/features/categories/categories'
 import { CategoryTile } from '@/features/categories/CategoryTile'
 import { formatDate } from '@/lib/format'
+import { prefersReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { PaperLine } from '../progress'
 import { ALL_DONE, formatKg, STEP } from '../steps'
@@ -13,8 +14,15 @@ function CountUpKg({ value }: { value: number }) {
   return <>{formatKg(useCountUp(value, COUNT_UP_MS))}</>
 }
 
-/** Stagger for printed lines, capped so long receipts do not take forever. */
-const lineDelay = (index: number) => `${Math.min(index * 90, 1400)}ms`
+/** Keeps the line that is printing in view when the receipt is taller than its pane. */
+function followPrint(line: HTMLElement) {
+  const pane = line.closest<HTMLElement>('[data-paper-scroll]')
+  if (!pane || pane.scrollHeight <= pane.clientHeight) return
+  const overflow = line.getBoundingClientRect().bottom - pane.getBoundingClientRect().bottom + 96
+  if (overflow > 0) {
+    pane.scrollBy({ top: overflow, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+  }
+}
 
 const SKELETON_WIDTHS = [82, 64, 74, 56, 70]
 
@@ -29,6 +37,8 @@ type ReceiptPaperProps = {
   totalKg: number
   /** The photo while it is uploaded and read (object URL or signed URL). */
   photoUrl: string | null
+  /** Delay between printed lines (see `printSchedule`). */
+  printGapMs?: number
   linesError?: boolean
   onRetryLines?: () => void
 }
@@ -47,6 +57,7 @@ export function ReceiptPaper({
   categoriesById,
   totalKg,
   photoUrl,
+  printGapMs = 0,
   linesError = false,
   onRetryLines,
 }: ReceiptPaperProps) {
@@ -60,7 +71,7 @@ export function ReceiptPaper({
     <section
       aria-label="Dein Bon"
       // drop-shadow follows the torn edge; a box-shadow would stop above it
-      className="relative w-full max-w-[25rem] drop-shadow-[0_14px_22px_rgba(18,20,18,.13)]"
+      className="light-scope relative w-full max-w-[25rem] drop-shadow-[0_14px_22px_rgba(18,20,18,.13)]"
     >
       <div className="relative overflow-hidden rounded-t-md bg-paper px-6 pt-7 pb-5 text-[#1a1c1a] sm:px-7">
         {reading && step === STEP.read && (
@@ -108,7 +119,10 @@ export function ReceiptPaper({
                 <li
                   key={line.id}
                   className="flex animate-print items-center gap-3 border-b border-dotted border-paper-line py-2.5 last:border-b-0"
-                  style={{ animationDelay: lineDelay(index) }}
+                  style={{ animationDelay: `${index * printGapMs}ms` }}
+                  onAnimationStart={(event) => {
+                    if (event.animationName === 'print') followPrint(event.currentTarget)
+                  }}
                 >
                   {categorized ? (
                     <CategoryTile category={category} size="sm" className="animate-pop" />
@@ -213,18 +227,6 @@ export function ReceiptPaper({
             </p>
           </div>
         </footer>
-
-        {done && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute top-4 right-4 grid size-16 -rotate-12 animate-pop place-items-center rounded-full border-2 border-success text-[color-mix(in_oklab,var(--success)_78%,black)]"
-          >
-            <span className="flex flex-col items-center font-mono text-[11px] leading-tight font-bold tracking-widest uppercase">
-              <Check className="size-5" strokeWidth={3} />
-              Fertig
-            </span>
-          </div>
-        )}
       </div>
       <div aria-hidden="true" className="paper-edge" />
     </section>

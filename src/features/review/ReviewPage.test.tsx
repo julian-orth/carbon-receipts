@@ -20,6 +20,8 @@ vi.mock('@/features/receipts/api')
 vi.mock('@/features/processing/timing', () => ({
   MIN_STEP_MS: 0,
   COUNT_UP_MS: 0,
+  PRINT_BUDGET_MS: 0,
+  PRINT_MAX_GAP_MS: 0,
   CREEP_MS: [0, 0, 0, 0, 0],
 }))
 vi.mock(import('@/features/receipts/realtime'), async (importOriginal) => ({
@@ -342,7 +344,10 @@ describe('ReviewPage while the receipt is analysed', () => {
     const user = userEvent.setup()
     const { queryClient } = renderReceipt(running, { fromUpload: true })
 
-    const dialog = await screen.findByRole('dialog', { name: 'Bon wird gelesen …' })
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    expect(
+      await within(dialog).findByRole('heading', { name: 'Bon wird gelesen …' }),
+    ).toBeInTheDocument()
     expect(within(dialog).getByText('Bon lesen: läuft')).toBeInTheDocument()
     // Plain language for users: no provider names, no "KI/Code" labels.
     expect(dialog).not.toHaveTextContent(/Gemini|Groq|\bCode\b/)
@@ -369,9 +374,8 @@ describe('ReviewPage while the receipt is analysed', () => {
       ])
     })
 
-    const done = await screen.findByRole('dialog', {
-      name: 'Fertig! 1 Position braucht deinen Blick.',
-    })
+    await within(dialog).findByRole('heading', { name: 'Fertig! 1 Position braucht deinen Blick.' })
+    const done = dialog
     expect(within(done).getAllByText(/: erledigt$/)).toHaveLength(5)
     // The drawn receipt has filled up with the lines, in receipt order.
     const printed = within(within(done).getByRole('list', { name: 'Erkannte Positionen' }))
@@ -415,7 +419,10 @@ describe('ReviewPage while the receipt is analysed', () => {
     const user = userEvent.setup()
     renderReceipt(failed)
 
-    const dialog = await screen.findByRole('dialog', { name: 'Das hat leider nicht geklappt' })
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    expect(
+      within(dialog).getByRole('heading', { name: 'Das hat leider nicht geklappt' }),
+    ).toBeInTheDocument()
     expect(within(dialog).getByText('Bon lesen: fehlgeschlagen')).toBeInTheDocument()
     expect(dialog).toHaveTextContent('Die KI-Dienste sind gerade nicht erreichbar.')
 
@@ -429,7 +436,10 @@ describe('ReviewPage while the receipt is analysed', () => {
     const user = userEvent.setup()
     renderReceipt(pending, { fromUpload: true })
 
-    const dialog = await screen.findByRole('dialog', { name: 'Wartet auf den Start' })
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    expect(
+      await within(dialog).findByRole('heading', { name: 'Wartet auf den Start' }),
+    ).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Analyse starten' }))
     expect(receipts.startProcessing).toHaveBeenCalledWith(pending.id, expect.anything())
   })

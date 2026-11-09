@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LineItem } from '@/features/review/review-logic'
-import { summarize, toPaperLine } from './progress'
+import { printSchedule, summarize, toPaperLine } from './progress'
 import { ALL_DONE, displayTarget, isFromUpload, serverStepIndex, STEP } from './steps'
 
 function item(overrides: Partial<LineItem> = {}): LineItem {
@@ -79,6 +79,25 @@ describe('toPaperLine', () => {
     expect(line.quantity).toBe('0,3 kg')
     expect(toPaperLine(item({ quantity_source: 'estimated' })).quantity).toMatch(/^~/)
     expect(toPaperLine(item({ category_id: null, reviewed: false })).needsLook).toBe(true)
+  })
+})
+
+describe('printSchedule', () => {
+  const options = { budgetMs: 3600, maxGapMs: 260 }
+
+  it('prints short receipts at a calm, fixed pace', () => {
+    expect(printSchedule(5, options)).toEqual({ gapMs: 260, totalMs: 260 * 4 + 450 })
+  })
+
+  it('speeds up long receipts so they stay within the budget', () => {
+    const { gapMs, totalMs } = printSchedule(40, options)
+    expect(gapMs).toBe(90)
+    expect(totalMs).toBeLessThanOrEqual(3600 + 450)
+  })
+
+  it('never goes below the minimum gap and handles empty lists', () => {
+    expect(printSchedule(200, options).gapMs).toBe(60)
+    expect(printSchedule(0, options)).toEqual({ gapMs: 0, totalMs: 0 })
   })
 })
 

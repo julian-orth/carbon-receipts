@@ -12,10 +12,10 @@ import type { LineItem } from '@/features/review/review-logic'
 import { useNow } from '@/lib/use-now'
 import { ProgressPanel } from './components/ProgressPanel'
 import { ReceiptPaper } from './components/ReceiptPaper'
-import { summarize, toPaperLine } from './progress'
+import { printSchedule, summarize, toPaperLine } from './progress'
 import { buildStory } from './story'
 import { ALL_DONE, displayTarget, serverStepIndex, STEP } from './steps'
-import { MIN_STEP_MS } from './timing'
+import { MIN_STEP_MS, PRINT_BUDGET_MS, PRINT_MAX_GAP_MS } from './timing'
 import { usePacedStep } from './use-paced-step'
 import { useReceiptTimeline } from './use-receipt-timeline'
 
@@ -81,14 +81,20 @@ function ProcessingBody({
   const failed = receipt.status === 'failed'
   const server = serverStepIndex(receipt)
   const target = failed ? server : displayTarget(server, itemsSettled)
+  const summary = useMemo(() => (items ? summarize(items) : null), [items])
+  const lines = useMemo(() => (items ? items.map(toPaperLine) : null), [items])
+  const print = printSchedule(lines?.length ?? 0, {
+    budgetMs: PRINT_BUDGET_MS,
+    maxGapMs: PRINT_MAX_GAP_MS,
+  })
+  // "Angaben prüfen" lasts until the last line is printed; categories and CO₂e follow after.
   const { step } = usePacedStep(target, {
     initial: fromUpload ? STEP.upload : target,
-    minStepMs: MIN_STEP_MS,
+    minStepMs: (current) =>
+      current === STEP.validate ? Math.max(MIN_STEP_MS, print.totalMs) : MIN_STEP_MS,
     origin,
   })
   const { providers } = useReceiptTimeline(receipt, origin)
-  const summary = useMemo(() => (items ? summarize(items) : null), [items])
-  const lines = useMemo(() => (items ? items.map(toPaperLine) : null), [items])
 
   const done = !failed && step === ALL_DONE
   const waiting = receipt.status === 'pending' && step === STEP.read
@@ -121,6 +127,7 @@ function ProcessingBody({
           categoriesById={categoriesById}
           totalKg={summary?.totalKg ?? 0}
           photoUrl={imageUrl}
+          printGapMs={print.gapMs}
           linesError={itemsError}
           onRetryLines={onRetryItems}
         />

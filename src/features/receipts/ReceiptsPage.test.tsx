@@ -120,7 +120,8 @@ describe('ReceiptsPage', () => {
     await user.upload(screen.getByLabelText(/Foto auswählen/), file)
 
     // The progress dialog is there before the upload has finished.
-    expect(await screen.findByRole('dialog', { name: 'Foto wird hochgeladen …' })).toBeVisible()
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    expect(within(dialog).getByRole('heading', { name: 'Foto wird hochgeladen …' })).toBeVisible()
     upload.resolve({ receipt, processingStarted: true })
     await waitFor(() =>
       expect(mockedApi.uploadReceipt).toHaveBeenCalledWith(
@@ -156,7 +157,8 @@ describe('ReceiptsPage', () => {
 
     await user.upload(screen.getByLabelText(/Foto auswählen/), jpeg())
 
-    const dialog = await screen.findByRole('dialog', { name: 'Upload fehlgeschlagen' })
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    await within(dialog).findByRole('heading', { name: 'Upload fehlgeschlagen' })
     mockedApi.uploadReceipt.mockResolvedValue({
       receipt: receiptFixture({ status: 'processing' }),
       processingStarted: true,

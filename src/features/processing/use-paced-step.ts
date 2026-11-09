@@ -10,7 +10,16 @@ type Paced = { step: number; visits: Visit[] }
  */
 export function usePacedStep(
   target: number,
-  { initial, minStepMs, origin }: { initial: number; minStepMs: number; origin: number },
+  {
+    initial,
+    minStepMs,
+    origin,
+  }: {
+    initial: number
+    /** How long a step stays at least – fixed, or per step (e.g. until lines are printed). */
+    minStepMs: number | ((step: number) => number)
+    origin: number
+  },
 ): Paced {
   const [paced, setPaced] = useState<Paced>(() => {
     const step = Math.min(initial, target)
@@ -20,7 +29,8 @@ export function usePacedStep(
   useEffect(() => {
     if (paced.step === target) return undefined
     const lastAt = paced.visits.at(-1)?.at ?? 0
-    const delay = target < paced.step ? 0 : Math.max(0, origin + lastAt + minStepMs - Date.now())
+    const stepMs = typeof minStepMs === 'function' ? minStepMs(paced.step) : minStepMs
+    const delay = target < paced.step ? 0 : Math.max(0, origin + lastAt + stepMs - Date.now())
     const id = setTimeout(() => {
       setPaced((prev) => {
         const step = target < prev.step ? target : prev.step + 1
