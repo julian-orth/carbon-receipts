@@ -1,6 +1,6 @@
 # Carbon Receipts
 
-Scope, architecture, data model and build order: see `docs/briefing.md` (source of truth).
+Overview, architecture and scope: see `README.md`; MVP scope excludes CSV/PDF import (decision 013).
 Decisions log: `docs/decisions.md` — add a short entry for every non-obvious choice.
 
 ## Commands

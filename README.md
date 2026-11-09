@@ -145,13 +145,31 @@ supabase/
     process-receipt/   edge function
   tests/database/      pgTAP
 e2e/                   Playwright
-docs/                  briefing, decisions, deployment
+docs/                  decisions, deployment, screenshots
 ```
 
 ## Deployment
 
 Step by step in [`docs/deploy.md`](docs/deploy.md): Supabase project, secrets, edge function,
 auth URLs, demo account, Vercel, GitHub secrets.
+
+## How this was built
+
+This project was built with AI pair programming: the implementation was written together with
+[Claude Code](https://www.anthropic.com/claude-code) (Anthropic), which is why commits list Claude as
+co-author. The product idea, scope and requirements, the review of every change and the testing with
+real receipts were done by me.
+
+What that meant in practice:
+
+- **Decisions are explicit.** Every non-obvious choice and its trade-off is written down in
+  [`docs/decisions.md`](docs/decisions.md) – including the ones that turned out wrong and were
+  revised (e.g. comparing a running month, an LLM model that disappeared, pack sizes missing on real
+  receipts).
+- **Nothing is trusted unverified.** Changes are backed by tests on every layer, a type-aware linter
+  and CI; emission factors were read from the original studies, not generated.
+- **Real data drove the design.** Testing with an actual Kaufland receipt showed that only 3 of 13
+  items had an amount – which led to estimated amounts, the learning loop and the review flags.
 
 ## Privacy
 
