@@ -36,6 +36,7 @@ export function AuthCallbackPage() {
 
   return (
     <div className="mx-auto max-w-sm space-y-4 py-8">
+      <title>Anmeldung fehlgeschlagen · Carbon Receipts</title>
       <h1 className="text-2xl font-semibold">Anmeldung fehlgeschlagen</h1>
       <Alert variant="destructive" role="alert">
         <AlertTitle>Der Link hat nicht funktioniert</AlertTitle>

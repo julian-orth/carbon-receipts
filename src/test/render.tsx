@@ -24,6 +24,7 @@ export function renderRoutes(routes: RouteObject[], options: RenderRoutesOptions
   })
   return {
     router,
+    queryClient,
     ...render(
       <QueryClientProvider client={queryClient}>
         <AuthContext.Provider value={auth}>

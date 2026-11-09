@@ -1,27 +1,20 @@
-import { useAuth } from '@/features/auth/auth-context'
 import { ReceiptList } from './components/ReceiptList'
 import { ReceiptUpload } from './components/ReceiptUpload'
-import { useReceiptsRealtime } from './realtime'
 
 export function ReceiptsPage() {
-  const auth = useAuth()
-  if (auth.status !== 'authenticated') return null
-  return <ReceiptsPageContent userId={auth.user.id} />
-}
-
-function ReceiptsPageContent({ userId }: { userId: string }) {
-  useReceiptsRealtime(userId)
-
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-semibold tracking-tight">Belege</h1>
+    <div className="space-y-12">
+      <title>Belege · Carbon Receipts</title>
+      <header className="animate-rise">
+        <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-[44px] sm:leading-[1.05]">
+          Belege
+        </h1>
+        <p className="mt-2.5 text-base text-muted-foreground sm:text-[17px]">
+          Fotografiere deinen Kassenbon. Den Rest rechnen wir aus.
+        </p>
+      </header>
       <ReceiptUpload />
-      <section aria-labelledby="receipts-list-title" className="space-y-3">
-        <h2 id="receipts-list-title" className="text-lg font-semibold">
-          Deine Belege
-        </h2>
-        <ReceiptList />
-      </section>
+      <ReceiptList />
     </div>
   )
 }

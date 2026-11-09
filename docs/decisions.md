@@ -257,3 +257,22 @@ the package, not on the receipt, so only 3 of 13 items got a CO₂e value.
   state and chart payloads use type guards. No `as` on external data remains.
 - **Dead code:** `knip` runs in CI; unused exports and helpers were removed.
 - **CSP** and other security headers for the Vercel deployment.
+
+## 021 – Live processing view and visual identity
+
+- **Full-screen live view** (`/receipts/:id/live`) right after an upload: five steps (upload, read,
+  check, match, calculate), each labelled _KI_ or _Code_, so "the AI suggests, the code calculates"
+  is visible. The whole screen fills as the progress bar; the result is "printed" on a receipt.
+- **Honest progress:** the edge function writes `receipts.processing_step` and `ai_provider`
+  (service_role only, via Realtime to the client). A provider fallback shows up in the protocol.
+  Within a step the fill creeps towards 90 % and slows down – it never claims "done" early.
+- **Pacing:** the steps after the AI call take milliseconds. The client shows every step for at
+  least 650 ms (`usePacedStep`) and prints the line items once they are loaded. Steps are shown in
+  the order they really ran, just not faster than a person can follow.
+- **Per-receipt totals** come from a `security_invoker` view (`receipt_totals`), not from summing
+  line items in the browser.
+- **Look:** ink + lime signal colour + receipt paper, Geist and Geist Mono (self-hosted; the CSP
+  only allows `font-src 'self'`). Animations use `transform`/`opacity` only and respect
+  `prefers-reduced-motion`.
+- **Bundle:** chunk groups no longer capture shared dependencies recursively; before, every page
+  preloaded the chart library (~84 kB gzip) through a shared helper.

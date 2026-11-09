@@ -17,12 +17,12 @@ export function UserMenu() {
       </span>
       <Button
         variant="ghost"
-        size="sm"
+        className="h-10 rounded-full px-3"
         onClick={() => signOut.mutate()}
         disabled={signOut.isPending}
       >
         {signOut.isPending ? <Spinner /> : <LogOut aria-hidden />}
-        Abmelden
+        <span className="max-sm:sr-only">Abmelden</span>
       </Button>
       {signOut.isError && (
         <p role="alert" className="text-sm text-destructive">

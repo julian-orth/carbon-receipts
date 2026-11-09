@@ -60,6 +60,7 @@ export function ReviewPage() {
   if (receipt.data === null) {
     return (
       <section className="space-y-3">
+        <title>Beleg nicht gefunden · Carbon Receipts</title>
         <h1 className="text-2xl font-semibold">Beleg nicht gefunden</h1>
         <Link to="/receipts" className="underline underline-offset-4">
           Zurück zu den Belegen
@@ -78,6 +79,7 @@ export function ReviewPage() {
 
   return (
     <div className="space-y-6">
+      <title>{`${title} prüfen · Carbon Receipts`}</title>
       <Link
         to="/receipts"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

@@ -1,8 +1,12 @@
 import { Link, Outlet } from 'react-router'
+import { BrandMark } from '@/components/BrandMark'
+import { useAuth } from '@/features/auth/auth-context'
 import { UserMenu } from '@/features/auth/UserMenu'
+import { ProcessingDock } from '@/features/processing/components/ProcessingDock'
 import { MainNav } from './MainNav'
 
 export function RootLayout() {
+  const auth = useAuth()
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <a
@@ -11,21 +15,26 @@ export function RootLayout() {
       >
         Zum Inhalt springen
       </a>
-      <header className="border-b">
+      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <nav
           aria-label="Hauptnavigation"
-          className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:gap-6"
+          className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6"
         >
-          <Link to="/" className="font-semibold whitespace-nowrap">
-            Carbon Receipts
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2.5 rounded-md font-semibold tracking-tight whitespace-nowrap focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <BrandMark className="size-8" />
+            <span className="max-sm:sr-only">Carbon Receipts</span>
           </Link>
           <MainNav />
           <UserMenu />
         </nav>
       </header>
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Outlet />
       </main>
+      {auth.status === 'authenticated' && <ProcessingDock userId={auth.user.id} />}
     </div>
   )
 }

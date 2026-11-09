@@ -1,0 +1,6 @@
+# The app lives behind a login; only the start page is public.
+User-agent: *
+Allow: /$
+Allow: /login
+Disallow: /receipts
+Disallow: /auth/

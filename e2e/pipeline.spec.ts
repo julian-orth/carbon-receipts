@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { AxeBuilder } from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { signInWithMagicLink, uniqueEmail } from './helpers.ts'
 
@@ -12,12 +13,18 @@ test('magic link → upload → AI extraction → review → dashboard', async (
   await page
     .getByLabel(/Foto auswählen/)
     .setInputFiles(path.join(import.meta.dirname, 'fixtures/receipt.jpg'))
-  await expect(page.getByText(/wurde hochgeladen und wird analysiert/)).toBeVisible()
 
-  // Status arrives via Realtime – no reload.
-  const item = page.getByRole('listitem').filter({ hasText: 'Beispielmarkt' })
-  await expect(item.getByText('Bitte prüfen')).toBeVisible({ timeout: 20_000 })
-  await item.getByRole('link', { name: 'Prüfen' }).click()
+  // Live view: every step is shown, the result is printed, then on to the review.
+  await expect(page).toHaveURL(/\/receipts\/[0-9a-f-]+\/live$/)
+  await expect(page.getByRole('navigation', { name: 'Verarbeitungsschritte' })).toBeVisible()
+  const review = page.getByRole('link', { name: /Beleg prüfen/ })
+  await expect(review).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('list', { name: 'Erkannte Positionen' })).toContainText('Gouda')
+  // The mock receipt has an item without amount, so it asks for a look.
+  await expect(page.getByRole('log')).toContainText(/deinen Blick/)
+  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(axe.violations.map((v) => v.id)).toEqual([])
+  await review.click()
 
   await expect(page.getByRole('heading', { level: 1, name: 'Beispielmarkt' })).toBeVisible()
   const gouda = page.getByRole('form', { name: 'Gouda jung Scheiben' })

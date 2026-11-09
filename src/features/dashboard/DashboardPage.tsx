@@ -50,8 +50,11 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
 
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
+      <title>Übersicht · Carbon Receipts</title>
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Übersicht</h1>
+        <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-[44px] sm:leading-[1.05]">
+          Übersicht
+        </h1>
         <p className="text-muted-foreground">Dein CO₂-Fußabdruck aus bestätigten Belegen.</p>
       </div>
       <RangeFilter value={range} onChange={setRange} />

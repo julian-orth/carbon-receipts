@@ -7,10 +7,11 @@ export function useReviewReceipt(id: string) {
   return useQuery({ queryKey: reviewKeys.receipt(id), queryFn: () => fetchReceipt(id) })
 }
 
-export function useLineItems(receiptId: string) {
+export function useLineItems(receiptId: string, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: reviewKeys.items(receiptId),
     queryFn: () => fetchLineItems(receiptId),
+    enabled,
   })
 }
 

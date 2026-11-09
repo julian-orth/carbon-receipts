@@ -15,6 +15,25 @@ export async function fetchReceipts(): Promise<Receipt[]> {
   return data
 }
 
+export type ReceiptTotal = { itemCount: number; co2eKg: number }
+
+/** CO₂e and item count per receipt (SQL view `receipt_totals`). */
+export async function fetchReceiptTotals(): Promise<Map<string, ReceiptTotal>> {
+  const { data, error } = await supabase
+    .from('receipt_totals')
+    .select('receipt_id, item_count, total_co2e_kg')
+  if (error) throw error
+  const totals = new Map<string, ReceiptTotal>()
+  for (const row of data) {
+    if (row.receipt_id === null) continue
+    totals.set(row.receipt_id, {
+      itemCount: row.item_count ?? 0,
+      co2eKg: row.total_co2e_kg ?? 0,
+    })
+  }
+  return totals
+}
+
 /**
  * Asks the edge function to analyse a pending receipt. A 409 means another call
  * already claimed it – that is fine, the UI follows the status via Realtime.

@@ -17,6 +17,9 @@ export default defineConfig({
       output: {
         // Long-lived vendor chunks: app deploys don't invalidate them.
         advancedChunks: {
+          // Otherwise a group also captures shared helpers (e.g. clsx), and every page
+          // would preload the chart library through them.
+          includeDependenciesRecursively: false,
           groups: [
             {
               name: 'react',

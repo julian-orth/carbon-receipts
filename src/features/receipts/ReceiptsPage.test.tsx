@@ -27,6 +27,7 @@ function jpeg(name = 'rewe.jpg') {
 describe('ReceiptsPage', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mockedApi.fetchReceiptTotals.mockResolvedValue(new Map())
   })
 
   it('subscribes to realtime updates for the current user', async () => {
@@ -36,20 +37,47 @@ describe('ReceiptsPage', () => {
     expect(useReceiptsRealtime).toHaveBeenCalledWith(testUser.id)
   })
 
-  it('shows a loading state, then the receipts with their status', async () => {
+  it('shows a loading state, then running and finished receipts separately', async () => {
     mockedApi.fetchReceipts.mockResolvedValue([
-      receiptFixture({ original_filename: 'rewe.jpg', status: 'processing' }),
+      receiptFixture({
+        original_filename: 'rewe.jpg',
+        status: 'processing',
+        processing_step: 'reading',
+        updated_at: new Date().toISOString(),
+      }),
       receiptFixture({ merchant: 'Edeka', status: 'review' }),
     ])
     renderPage()
 
     expect(await screen.findByRole('status', { name: 'Belege werden geladen' })).toBeInTheDocument()
 
-    const list = await screen.findByRole('list', { name: 'Deine Belege' })
+    const active = await screen.findByRole('list', { name: 'In Arbeit' })
+    expect(within(active).getByRole('listitem')).toHaveTextContent(
+      /rewe\.jpg.*Schritt 2 von 5 · Die KI liest deinen Bon/,
+    )
+    expect(within(active).getByRole('link', { name: /Live ansehen/ })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/live$/),
+    )
+
+    const list = screen.getByRole('list', { name: 'Deine Belege' })
     const items = within(list).getAllByRole('listitem')
-    expect(items).toHaveLength(2)
-    expect(items[0]).toHaveTextContent(/rewe\.jpg.*Wird analysiert/)
-    expect(items[1]).toHaveTextContent(/Edeka.*Bitte prüfen/)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent(/Edeka.*Bitte prüfen/)
+  })
+
+  it('shows the CO2e total and item count per receipt', async () => {
+    const receipt = receiptFixture({ merchant: 'Wochenmarkt', status: 'review' })
+    mockedApi.fetchReceipts.mockResolvedValue([receipt])
+    mockedApi.fetchReceiptTotals.mockResolvedValue(
+      new Map([[receipt.id, { itemCount: 6, co2eKg: 9.28 }]]),
+    )
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Deine Belege' })
+    const item = within(list).getByRole('listitem')
+    expect(await within(item).findByText('9,28 kg')).toBeInTheDocument()
+    expect(item).toHaveTextContent('6 Positionen')
   })
 
   it('shows an empty state', async () => {
@@ -70,14 +98,12 @@ describe('ReceiptsPage', () => {
     expect(await screen.findByText('Noch keine Belege')).toBeInTheDocument()
   })
 
-  it('uploads a valid file and confirms it', async () => {
+  it('uploads a valid file and opens the live view', async () => {
     mockedApi.fetchReceipts.mockResolvedValue([])
-    mockedApi.uploadReceipt.mockResolvedValue({
-      receipt: receiptFixture(),
-      processingStarted: true,
-    })
+    const receipt = receiptFixture({ status: 'processing', processing_step: 'reading' })
+    mockedApi.uploadReceipt.mockResolvedValue({ receipt, processingStarted: true })
     const user = userEvent.setup()
-    renderPage()
+    const { router } = renderPage()
     await screen.findByText('Noch keine Belege')
 
     const file = jpeg()
@@ -89,10 +115,8 @@ describe('ReceiptsPage', () => {
         expect.anything(),
       ),
     )
-    expect(
-      await screen.findByText(/„rewe.jpg“ wurde hochgeladen und wird analysiert/),
-    ).toBeInTheDocument()
-    expect(mockedApi.fetchReceipts).toHaveBeenCalledTimes(2) // list refetched
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/receipts/${receipt.id}/live`))
+    expect(router.state.location.state).toEqual({ fromUpload: true })
   })
 
   it('rejects unsupported files without uploading', async () => {
@@ -179,20 +203,5 @@ describe('ReceiptsPage', () => {
       'href',
       `/receipts/${review.id}`,
     )
-  })
-
-  it('tells the user when the analysis could not be started', async () => {
-    mockedApi.fetchReceipts.mockResolvedValue([])
-    mockedApi.uploadReceipt.mockResolvedValue({
-      receipt: receiptFixture(),
-      processingStarted: false,
-    })
-    const user = userEvent.setup()
-    renderPage()
-    await screen.findByText('Noch keine Belege')
-
-    await user.upload(screen.getByLabelText(/Foto auswählen/), jpeg())
-
-    expect(await screen.findByText(/Analyse konnte nicht gestartet werden/)).toBeInTheDocument()
   })
 })

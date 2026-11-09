@@ -60,6 +60,7 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto max-w-sm py-8">
+      <title>Anmelden · Carbon Receipts</title>
       <Card>
         {sendMagicLink.isSuccess ? (
           <>

@@ -10,6 +10,7 @@ export function RouteError() {
 
   return (
     <main className="mx-auto max-w-md space-y-4 px-4 py-16 text-center">
+      <title>Fehler · Carbon Receipts</title>
       <h1 className="text-2xl font-semibold">Etwas ist schiefgelaufen</h1>
       <p className="text-muted-foreground">
         {isRouteErrorResponse(error)

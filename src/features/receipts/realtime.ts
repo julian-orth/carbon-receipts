@@ -55,6 +55,10 @@ export function useReceiptsRealtime(userId: string) {
           queryClient.setQueryData<Receipt[]>(receiptKeys.list(), (list) =>
             applyReceiptChange(list, change),
           )
+          // A finished analysis (or a deleted receipt) changes the per-receipt totals.
+          if (change.eventType === 'DELETE' || change.receipt.status === 'review') {
+            void queryClient.invalidateQueries({ queryKey: receiptKeys.totals() })
+          }
         },
       )
       .subscribe((status) => {
