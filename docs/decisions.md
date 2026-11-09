@@ -15,8 +15,10 @@ TypeScript `<6.1`, so ESLint would have forced a TypeScript downgrade. oxlint co
 (`react`, `react-hooks`, `jsx-a11y`, `typescript`, `import`, `vitest`) natively, is much faster and
 works with TS 7. Prettier stays responsible for formatting.
 
-**Trade-off:** no type-aware lint rules (e.g. `no-floating-promises`) for now. Revisit once
-typescript-eslint or oxlint's type-aware mode supports TS 7.
+**Update:** oxlint's type-aware mode (`oxlint-tsgolint`, built on the native TS compiler) now works
+with TS 7 and runs in `npm run lint` – `no-floating-promises`, `no-misused-promises`,
+`no-unsafe-type-assertion` and friends. It found three forms that passed an unhandled promise to
+`onSubmit` and several unchecked casts of external data.
 
 ## 003 – Strict TypeScript beyond `strict`
 
@@ -240,3 +242,18 @@ the package, not on the receipt, so only 3 of 13 items got a CO₂e value.
 - Prompt context: section headers on the receipt ("SB - Wurst") now inform category and pack size,
   and deposit lines hint at the number of bottles. Plausibility rules such as "price ÷ amount must be
   a realistic price per kg" are only partly followed by the model – estimates stay flagged for review.
+
+## 020 – Hardening pass
+
+- **Atomic processing:** `claim_receipt` and `complete_receipt_processing` (service_role only) claim
+  a receipt and write its result in single statements/transactions. Before, a crash between
+  "delete old items", "insert new items" and "set status" could leave a receipt half written.
+- **Crash recovery:** a receipt stuck in `processing` for more than 5 minutes (function killed) can be
+  claimed again; the list offers "Analyse starten" for it.
+- **Smaller uploads:** photos are downscaled in the browser to JPEG with a 2048 px long edge
+  (4032×3024 / 2.5 MB → 2048×1536 / 0.5 MB in a real browser test). Faster uploads, fewer LLM
+  timeouts, fewer tokens. Formats the browser cannot decode (HEIC outside Safari) are uploaded as is.
+- **Validate, don't cast:** responses from Gemini, Groq and Mailpit (E2E) are parsed with Zod; router
+  state and chart payloads use type guards. No `as` on external data remains.
+- **Dead code:** `knip` runs in CI; unused exports and helpers were removed.
+- **CSP** and other security headers for the Vercel deployment.
