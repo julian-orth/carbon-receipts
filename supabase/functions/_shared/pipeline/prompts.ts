@@ -2,7 +2,7 @@ import type { LlmRequest } from '../llm/types.ts'
 
 export type PromptCategory = { slug: string; label: string; unit: string }
 
-const SYSTEM = `Du extrahierst Positionen aus Fotos deutscher Kassenbons.
+const SYSTEM = `Du extrahierst Positionen aus Fotos von Kassenbons (meist deutsch, andere Sprachen sind möglich).
 Antworte ausschließlich mit JSON. Erfinde keine Positionen, die nicht auf dem Bon stehen.`
 
 /**
@@ -18,6 +18,9 @@ export function buildExtractionRequest(
   const prompt = `Lies den Kassenbon auf dem Bild und gib folgendes JSON zurück:
 
 {
+  "document_type": "receipt" | "not_a_receipt", // Zeigt das Bild einen Kassenbon bzw. eine Quittung über Einkäufe?
+  "currency": string | null,          // ISO-Code der Währung auf dem Bon, z. B. "EUR", "CHF", "USD"
+  "issues": ("unreadable" | "cut_off" | "multiple_receipts" | "non_food_only")[], // Probleme, siehe Regeln; sonst []
   "merchant": string | null,          // Name des Geschäfts
   "purchased_at": "YYYY-MM-DD" | null, // Kaufdatum
   "items": [
@@ -27,7 +30,7 @@ export function buildExtractionRequest(
       "unit": "kg" | "g" | "l" | "ml" | "stk" | null,
       "estimated_quantity": number | null, // übliche Packungsgröße, wenn auf dem Bon keine Menge steht
       "estimated_unit": "kg" | "g" | "l" | "ml" | "stk" | null,
-      "price": number | null,       // Gesamtpreis der Zeile in EUR
+      "price": number | null,       // Gesamtpreis der Zeile in der Währung des Bons (nicht umrechnen)
       "category_slug": string | null,
       "confidence": number          // 0 bis 1: wie sicher die Kategorie passt
     }
@@ -35,6 +38,15 @@ export function buildExtractionRequest(
 }
 
 Regeln:
+- Ist auf dem Bild kein Kassenbon und keine Quittung über Einkäufe zu sehen (z. B. Selfie, Landschaft, Screenshot,
+  Brief, leeres Bild), setze document_type auf "not_a_receipt" und gib items als [] zurück.
+- issues: "unreadable", wenn der Text verwackelt, zu dunkel, überbelichtet, spiegelnd oder zu klein ist und deshalb
+  Positionen fehlen oder nur geraten sind; "cut_off", wenn der Bon oben, unten oder seitlich abgeschnitten ist oder
+  nur ein Teil eines längeren Bons zu sehen ist; "multiple_receipts", wenn mehrere Bons auf dem Bild liegen (lies
+  nur den deutlichsten); "non_food_only", wenn keine Position ein Lebensmittel, Getränk oder Kraftstoff ist.
+- Der Bon darf in einer anderen Sprache gedruckt sein (z. B. Englisch, Französisch, Italienisch, Türkisch):
+  raw_text bleibt wie gedruckt, die Kategorie wählst du nach der Bedeutung des Produkts. Bei einer anderen Währung
+  als EUR prüfst du Schätzungen nicht am Preis.
 - Gib die Positionen in der Reihenfolge zurück, in der sie auf dem Bon stehen (von oben nach unten).
 - Ignoriere Summen, Zwischensummen, MwSt., Zahlungsart, Rückgeld, Pfand, Leergut und Rabatte.
 - Mengen- und Gewichtszeilen ohne eigenen Artikelnamen (z. B. "2 x 0,89" oder "1,186 kg x 1,41 EUR/kg")

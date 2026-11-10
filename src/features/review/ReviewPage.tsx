@@ -1,4 +1,13 @@
-import { ArrowLeft, CheckCheck, ExternalLink, ImageOff, PartyPopper, Play } from 'lucide-react'
+import {
+  ArrowLeft,
+  Camera,
+  CheckCheck,
+  ExternalLink,
+  ImageOff,
+  Info,
+  PartyPopper,
+  Play,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -10,8 +19,10 @@ import { MiniSteps } from '@/features/processing/components/MiniSteps'
 import { ProcessingDialog } from '@/features/processing/ProcessingDialog'
 import { isFromUpload, serverStepIndex, STEPS } from '@/features/processing/steps'
 import { ReceiptStatusBadge } from '@/features/receipts/components/ReceiptStatusBadge'
+import { failureHelp, noteHelp } from '@/features/receipts/failure'
 import { useReceipts } from '@/features/receipts/queries'
 import type { Receipt } from '@/features/receipts/types'
+import { useUploadFlow } from '@/features/receipts/upload/upload-flow-context'
 import { formatDate } from '@/lib/format'
 import { formatCo2e } from '@/lib/format-co2'
 import { prefersReducedMotion } from '@/lib/motion'
@@ -204,6 +215,8 @@ function AnalysisPlaceholder({
 }) {
   const step = serverStepIndex(receipt)
   const failed = receipt.status === 'failed'
+  const help = failureHelp(receipt.error_code)
+  const { openPicker } = useUploadFlow()
   return (
     <section
       aria-labelledby="analysis-title"
@@ -212,7 +225,7 @@ function AnalysisPlaceholder({
       <div className="space-y-1">
         <h2 id="analysis-title" className="text-lg font-semibold">
           {failed
-            ? 'Analyse fehlgeschlagen'
+            ? help.title
             : receipt.status === 'pending'
               ? 'Wartet auf die Analyse'
               : `Wird analysiert: ${STEPS[step]?.label ?? 'Bon lesen'}`}
@@ -222,12 +235,29 @@ function AnalysisPlaceholder({
             ? (receipt.error ?? 'Dein Foto ist gespeichert, du kannst es erneut versuchen.')
             : 'Die Positionen erscheinen hier, sobald die Analyse fertig ist.'}
         </p>
+        {failed && (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            {help.tips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        )}
       </div>
       {!failed && <MiniSteps step={step} running={receipt.status === 'processing'} />}
-      <div>
+      <div className="flex flex-wrap gap-2">
+        {failed && help.canUploadNew && (
+          <Button onClick={openPicker}>
+            <Camera aria-hidden />
+            Neues Foto hochladen
+          </Button>
+        )}
         <Button variant="outline" onClick={onShowProgress}>
-          {failed ? <Play aria-hidden /> : null}
-          {failed ? 'Details & neuer Versuch' : 'Fortschritt anzeigen'}
+          {failed && help.canRetry ? <Play aria-hidden /> : null}
+          {failed
+            ? help.canRetry
+              ? 'Details & neuer Versuch'
+              : 'Details'
+            : 'Fortschritt anzeigen'}
         </Button>
       </div>
     </section>
@@ -340,8 +370,25 @@ function ItemEditor({
     focusRow(next?.id ?? item.id)
   }
 
+  const notes = noteHelp(receipt.notes)
+
   return (
     <>
+      {notes.length > 0 && (
+        <Alert aria-label="Hinweise zur Analyse">
+          <Info aria-hidden />
+          <AlertTitle>Beim Lesen ist uns etwas aufgefallen</AlertTitle>
+          <AlertDescription>
+            <ul className="space-y-1.5">
+              {notes.map((note) => (
+                <li key={note.title}>
+                  <strong className="font-medium">{note.title}.</strong> {note.text}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
       <section aria-labelledby="items-title" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="items-title" className="text-lg font-semibold">

@@ -379,3 +379,22 @@ Now: the switch lives in an "Auswertung" section below the hero and says what it
 totals and area totals are loaded once for 12 months and sliced in the browser (no request, no
 loading state); only the hotspots depend on the range and keep the old list, dimmed, until the new
 one arrives (`keepPreviousData`). The goal hint uses a fixed basis of six months.
+
+## 031 – Failed analyses explain themselves; the AI classifies, the code words it
+
+Before, every problem ended in one of two sentences. Now the model also reports what it sees:
+`document_type` (receipt / not a receipt), `currency` and `issues` (unreadable, cut off, several
+receipts, no food). It never writes the user-facing text. The code decides (`assessExtraction`),
+stores a machine-readable `receipts.error_code` and `receipts.notes`, and the UI turns those into
+concrete help (`failure.ts`): what is wrong and what to do – a retry only where it can help (service
+hiccup), a new photo where the photo is the problem, nothing pointless in between.
+
+- Foreign receipts are read as well (item names are translated by meaning); prices of a non-EUR
+  receipt are dropped instead of being shown as euros.
+- Very long receipts: the browser resize keeps the short side at 1000 px (up to 4096 px long)
+  instead of squeezing a tall photo to 2048 px, where the text would be unreadable.
+- A receipt that only had deposits or discounts now fails as "no items" instead of an empty review.
+- The upload flow (file input, upload, progress dialog) moved from the receipts page into one
+  provider in the layout, so any page can start it – see the header and dashboard buttons.
+- `complete_receipt_processing` / `claim_receipt` were redefined on the latest versions (progress
+  step, item positions); the pgTAP suite caught an earlier draft that would have dropped those.

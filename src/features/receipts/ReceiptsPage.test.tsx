@@ -180,6 +180,35 @@ describe('ReceiptsPage', () => {
     expect(mockedApi.retryReceipt).toHaveBeenCalledWith(failed.id, expect.anything())
   })
 
+  it('tells what to do instead of offering a retry when the photo is the problem', async () => {
+    mockedApi.fetchReceipts.mockResolvedValue([
+      receiptFixture({
+        status: 'failed',
+        error: 'Das sieht nicht nach einem Kassenbon aus.',
+        error_code: 'not_a_receipt',
+      }),
+    ])
+    renderPage()
+
+    expect(await screen.findByText('Das sieht nicht nach einem Kassenbon aus.')).toBeVisible()
+    expect(screen.getByText(/Fotografiere den Kassenbon oder die Quittung selbst/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Neues Foto' })).toBeInTheDocument()
+  })
+
+  it('opens the file picker from "Neues Foto"', async () => {
+    mockedApi.fetchReceipts.mockResolvedValue([
+      receiptFixture({ status: 'failed', error: 'x', error_code: 'unreadable' }),
+    ])
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click')
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Neues Foto' }))
+    expect(click).toHaveBeenCalled()
+    click.mockRestore()
+  })
+
   it('deletes a receipt only after confirmation', async () => {
     const receipt = receiptFixture({ original_filename: 'rewe.jpg' })
     mockedApi.fetchReceipts.mockResolvedValue([receipt])

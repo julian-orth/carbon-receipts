@@ -1,4 +1,4 @@
-import { ArrowRight, Play, Receipt as ReceiptIcon, RotateCcw } from 'lucide-react'
+import { ArrowRight, Camera, Play, Receipt as ReceiptIcon, RotateCcw } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -10,7 +10,9 @@ import { formatDate, formatDateTime } from '@/lib/format'
 import { useNow } from '@/lib/use-now'
 import type { ReceiptTotal } from '../api'
 import { useReceipts, useReceiptTotals, useRetryReceipt, useStartProcessing } from '../queries'
+import { failureHelp } from '../failure'
 import { canStartProcessing } from '../status'
+import { useUploadFlow } from '../upload/upload-flow-context'
 import type { Receipt } from '../types'
 import { DeleteReceiptButton } from './DeleteReceiptButton'
 import { ReceiptStatusBadge } from './ReceiptStatusBadge'
@@ -198,6 +200,7 @@ function ReceiptListItem({
   maxKg: number
 }) {
   const retry = useRetryReceipt()
+  const { openPicker } = useUploadFlow()
   const label = receiptLabel(receipt)
   const reviewable = receipt.status === 'review' || receipt.status === 'done'
 
@@ -228,7 +231,12 @@ function ReceiptListItem({
           {total && total.itemCount > 0 && <> · {total.itemCount} Positionen</>}
         </p>
         {receipt.status === 'failed' && receipt.error && (
-          <p className="mt-1 text-sm text-destructive">{receipt.error}</p>
+          <>
+            <p className="mt-1 text-sm text-destructive">{receipt.error}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {failureHelp(receipt.error_code).tips[0]}
+            </p>
+          </>
         )}
       </div>
 
@@ -260,7 +268,7 @@ function ReceiptListItem({
             <Link to={`/receipts/${receipt.id}`}>Prüfen</Link>
           </Button>
         )}
-        {receipt.status === 'failed' && (
+        {receipt.status === 'failed' && failureHelp(receipt.error_code).canRetry && (
           <Button
             variant="outline"
             className="h-10 rounded-full px-4"
@@ -269,6 +277,12 @@ function ReceiptListItem({
           >
             <RotateCcw aria-hidden />
             Erneut versuchen
+          </Button>
+        )}
+        {receipt.status === 'failed' && failureHelp(receipt.error_code).canUploadNew && (
+          <Button variant="outline" className="h-10 rounded-full px-4" onClick={openPicker}>
+            <Camera aria-hidden />
+            Neues Foto
           </Button>
         )}
         <DeleteReceiptButton receipt={receipt} label={label} />

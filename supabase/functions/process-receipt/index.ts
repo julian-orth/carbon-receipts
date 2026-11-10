@@ -15,6 +15,13 @@ import { createGroqProvider } from '../_shared/llm/groq.ts'
 import { createMockProvider } from '../_shared/llm/mock.ts'
 import { AllProvidersFailedError, generateWithFallback } from '../_shared/llm/resilient.ts'
 import type { LlmProvider } from '../_shared/llm/types.ts'
+import {
+  assessExtraction,
+  collectNotes,
+  FAILURE_MESSAGE,
+  type FailureCode,
+  isForeignCurrency,
+} from '../_shared/pipeline/assess.ts'
 import { buildLineItems } from '../_shared/pipeline/enrich.ts'
 import { buildExtractionRequest } from '../_shared/pipeline/prompts.ts'
 import { parseReceiptExtraction } from '../_shared/pipeline/schema.ts'
@@ -39,8 +46,15 @@ const corsHeaders = {
 
 const bodySchema = z.object({ receipt_id: z.uuid() })
 
-/** Errors whose message is safe and helpful to show to the user. */
-class UserFacingError extends Error {}
+/** Errors whose message is safe and helpful to show to the user; `code` lets the UI explain more. */
+class UserFacingError extends Error {
+  constructor(
+    message: string,
+    readonly code: FailureCode,
+  ) {
+    super(message)
+  }
+}
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -105,10 +119,23 @@ async function reportProgress(
   if (error) console.warn('Could not report progress', error.message)
 }
 
+function describeError(error: unknown): { message: string; code: FailureCode } {
+  if (error instanceof UserFacingError) return { message: error.message, code: error.code }
+  if (error instanceof AllProvidersFailedError) {
+    return {
+      message:
+        'Die KI-Dienste sind gerade nicht erreichbar oder überlastet. Bitte versuche es später erneut.',
+      code: 'ai_unavailable',
+    }
+  }
+  return { message: 'Die Analyse ist fehlgeschlagen. Bitte versuche es erneut.', code: 'unknown' }
+}
+
 async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<void> {
   const startedAt = Date.now()
   try {
-    if (!receipt.file_path) throw new UserFacingError('Zu diesem Beleg gibt es keine Datei.')
+    if (!receipt.file_path)
+      throw new UserFacingError('Zu diesem Beleg gibt es keine Datei.', 'no_file')
 
     const providers = createProviders()
     if (providers.length === 0)
@@ -126,6 +153,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     if (!quota.data) {
       throw new UserFacingError(
         'Dein Tageslimit für KI-Analysen ist erreicht. Morgen geht es weiter.',
+        'quota',
       )
     }
 
@@ -154,11 +182,8 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     }
     // The response passed the Zod schema inside generateWithFallback; now the content checks.
     await reportProgress(admin, receipt.id, { processing_step: 'validating' })
-    if (extraction.items.length === 0) {
-      throw new UserFacingError(
-        'Auf dem Foto wurden keine Positionen erkannt. Ist der Bon gut lesbar?',
-      )
-    }
+    const failure = assessExtraction(extraction)
+    if (failure) throw new UserFacingError(FAILURE_MESSAGE[failure], failure)
 
     await reportProgress(admin, receipt.id, { processing_step: 'matching' })
     // Learned mappings (user first, then global) override the model's category.
@@ -177,12 +202,19 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     if (mappings.error) throw mappings.error
 
     await reportProgress(admin, receipt.id, { processing_step: 'calculating' })
+    // Prices are only kept for EUR: a foreign amount would be shown (and checked) as euros.
+    const foreign = isForeignCurrency(extraction.currency)
     const lineItems = buildLineItems({
-      items: extraction.items,
+      items: foreign
+        ? extraction.items.map((item) => ({ ...item, price: null }))
+        : extraction.items,
       categories: categories.data,
       mappings: mappings.data,
       userId: receipt.user_id,
     })
+
+    // Only deposits, discounts or empty names were on it: nothing left to review.
+    if (lineItems.length === 0) throw new UserFacingError(FAILURE_MESSAGE.no_items, 'no_items')
 
     // One transaction: replaces earlier attempts' items and moves the receipt to `review`.
     const completed = await admin.rpc('complete_receipt_processing', {
@@ -190,6 +222,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       p_items: lineItems,
       p_merchant: extraction.merchant ?? undefined,
       p_purchased_at: extraction.purchased_at ?? undefined,
+      p_notes: collectNotes(extraction, lineItems),
     })
     if (completed.error) throw completed.error
 
@@ -204,12 +237,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       }),
     )
   } catch (error) {
-    const message =
-      error instanceof UserFacingError
-        ? error.message
-        : error instanceof AllProvidersFailedError
-          ? 'Die KI-Dienste sind gerade nicht erreichbar oder überlastet. Bitte versuche es später erneut.'
-          : 'Die Analyse ist fehlgeschlagen. Bitte versuche es erneut.'
+    const { message, code } = describeError(error)
     console.error(
       JSON.stringify({
         event: 'receipt_failed',
@@ -219,7 +247,7 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     )
     const { error: updateError } = await admin
       .from('receipts')
-      .update({ status: 'failed', error: message })
+      .update({ status: 'failed', error: message, error_code: code })
       .eq('id', receipt.id)
     if (updateError) console.error('Could not mark receipt as failed', updateError)
   }

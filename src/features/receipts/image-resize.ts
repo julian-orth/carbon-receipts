@@ -4,8 +4,23 @@ const JPEG_QUALITY = 0.85
 /** Below this size an image that already fits is uploaded unchanged. */
 const SMALL_ENOUGH_BYTES = 1.5 * 1024 * 1024
 
+/** A very long receipt may exceed `MAX_DIMENSION` so its short side stays readable, up to this. */
+export const MAX_LONG_DIMENSION = 4096
+/** Shortest edge a long receipt keeps (when the original has that many pixels). */
+const MIN_READABLE_SHORT_EDGE = 1000
+
 export function fitWithin(width: number, height: number, max = MAX_DIMENSION) {
-  const scale = Math.min(1, max / Math.max(width, height))
+  let scale = Math.min(1, max / Math.max(width, height))
+  // A receipt photographed top to bottom is very tall and narrow: scaling its long side to
+  // `max` would shrink the text to mush. Keep the short side readable, within a hard cap.
+  const short = Math.min(width, height)
+  if (short * scale < MIN_READABLE_SHORT_EDGE) {
+    scale = Math.min(
+      1,
+      MIN_READABLE_SHORT_EDGE / short,
+      MAX_LONG_DIMENSION / Math.max(width, height),
+    )
+  }
   return { width: Math.round(width * scale), height: Math.round(height * scale) }
 }
 

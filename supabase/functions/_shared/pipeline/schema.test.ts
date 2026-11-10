@@ -34,6 +34,9 @@ describe('parseReceiptExtraction', () => {
       items: [{ raw_text: ' Milch 1L ', price: '1,39 €', quantity: '', confidence: '0,8' }],
     })
     expect(result).toEqual({
+      document_type: 'receipt',
+      currency: null,
+      issues: [],
       merchant: null,
       purchased_at: null,
       items: [

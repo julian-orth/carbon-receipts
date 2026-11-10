@@ -33,7 +33,38 @@ const extractedItemSchema = z.object({
   confidence: looseNumber.pipe(z.number().min(0).max(1)).catch(0),
 })
 
+/** What the model may report about the photo itself; anything else is dropped. */
+export const EXTRACTION_ISSUES = [
+  'unreadable',
+  'cut_off',
+  'multiple_receipts',
+  'non_food_only',
+] as const
+export type ExtractionIssue = (typeof EXTRACTION_ISSUES)[number]
+
+const issueSet: ReadonlySet<string> = new Set(EXTRACTION_ISSUES)
+
+const issuesSchema = z
+  .array(z.unknown())
+  .catch([])
+  .transform((values) => [
+    ...new Set(
+      values.filter((v): v is ExtractionIssue => typeof v === 'string' && issueSet.has(v)),
+    ),
+  ])
+
 const receiptExtractionSchema = z.object({
+  /** `not_a_receipt`: the photo shows something else (selfie, screenshot, a letter ...). */
+  document_type: z.enum(['receipt', 'not_a_receipt']).catch('receipt').default('receipt'),
+  /** ISO code printed on the receipt; null when unknown. Normalised to upper case. */
+  currency: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? value.trim().toUpperCase() || null : null),
+      z.string().max(8).nullable(),
+    )
+    .catch(null)
+    .default(null),
+  issues: issuesSchema.default([]),
   merchant: optionalText(120).default(null),
   purchased_at: z.iso.date().nullable().catch(null).default(null),
   items: z.array(extractedItemSchema).max(150),

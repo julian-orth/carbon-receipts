@@ -11,6 +11,8 @@ export function receiptFixture(overrides: Partial<Receipt> = {}): Receipt {
     merchant: null,
     purchased_at: null,
     error: null,
+    error_code: null,
+    notes: [],
     processing_step: null,
     ai_provider: null,
     created_at: '2026-11-07T10:00:00Z',

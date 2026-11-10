@@ -263,9 +263,11 @@ export type Database = {
           ai_provider: string | null
           created_at: string
           error: string | null
+          error_code: string | null
           file_path: string | null
           id: string
           merchant: string | null
+          notes: string[]
           original_filename: string | null
           processing_step: Database['public']['Enums']['processing_step'] | null
           purchased_at: string | null
@@ -278,9 +280,11 @@ export type Database = {
           ai_provider?: string | null
           created_at?: string
           error?: string | null
+          error_code?: string | null
           file_path?: string | null
           id?: string
           merchant?: string | null
+          notes?: string[]
           original_filename?: string | null
           processing_step?: Database['public']['Enums']['processing_step'] | null
           purchased_at?: string | null
@@ -293,9 +297,11 @@ export type Database = {
           ai_provider?: string | null
           created_at?: string
           error?: string | null
+          error_code?: string | null
           file_path?: string | null
           id?: string
           merchant?: string | null
+          notes?: string[]
           original_filename?: string | null
           processing_step?: Database['public']['Enums']['processing_step'] | null
           purchased_at?: string | null
@@ -408,6 +414,7 @@ export type Database = {
         Args: {
           p_items: Json
           p_merchant?: string
+          p_notes?: string[]
           p_purchased_at?: string
           p_receipt_id: string
         }

@@ -1,13 +1,15 @@
-import { ArrowRight, Play, RotateCcw } from 'lucide-react'
+import { ArrowRight, Camera, Play, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
 import type { EmissionCategory } from '@/features/categories/categories'
+import { failureHelp } from '@/features/receipts/failure'
 import { useRetryReceipt, useStartProcessing } from '@/features/receipts/queries'
 import { canStartProcessing } from '@/features/receipts/status'
 import type { Receipt } from '@/features/receipts/types'
+import { useUploadFlow } from '@/features/receipts/upload/upload-flow-context'
 import type { LineItem } from '@/features/review/review-logic'
 import { useNow } from '@/lib/use-now'
 import { ProgressPanel } from './components/ProgressPanel'
@@ -104,9 +106,12 @@ function ProcessingBody({
     done,
     waiting,
     error: receipt.error,
+    errorCode: receipt.error_code,
     summary: step >= STEP.match ? summary : null,
   })
   const actionFailed = start.isError || retry.isError
+  const help = failureHelp(receipt.error_code)
+  const { openPicker } = useUploadFlow()
 
   return (
     <ProgressPanel
@@ -115,6 +120,7 @@ function ProcessingBody({
       waiting={waiting}
       title={story.title}
       description={story.description}
+      hints={failed ? help.tips : undefined}
       fileName={receipt.merchant ?? receipt.original_filename}
       slow={providers.length > 1}
       paper={
@@ -159,7 +165,20 @@ function ProcessingBody({
               Analyse starten
             </Button>
           )}
-          {failed && (
+          {failed && help.canUploadNew && (
+            <Button
+              size="lg"
+              onClick={() => {
+                onClose()
+                openPicker()
+              }}
+              className="max-sm:flex-1"
+            >
+              <Camera aria-hidden />
+              Neues Foto
+            </Button>
+          )}
+          {failed && help.canRetry && (
             <Button
               size="lg"
               onClick={() => retry.mutate(receipt.id)}

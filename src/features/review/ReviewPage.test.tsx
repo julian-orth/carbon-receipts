@@ -430,6 +430,59 @@ describe('ReviewPage while the receipt is analysed', () => {
     expect(receipts.retryReceipt).toHaveBeenCalledWith(failed.id, expect.anything())
   })
 
+  it('explains a photo that is not a receipt and offers a new photo instead of a retry', async () => {
+    const failed = receiptFixture({
+      status: 'failed',
+      processing_step: 'reading',
+      error: 'Das sieht nicht nach einem Kassenbon aus.',
+      error_code: 'not_a_receipt',
+    })
+    renderReceipt(failed)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    expect(within(dialog).getByRole('heading', { name: 'Das ist kein Kassenbon' })).toBeVisible()
+    expect(dialog).toHaveTextContent('Das sieht nicht nach einem Kassenbon aus.')
+    expect(dialog).toHaveTextContent(/Fotografiere den Kassenbon/)
+    expect(within(dialog).getByRole('button', { name: 'Neues Foto' })).toBeInTheDocument()
+    // The same photo would fail the same way: no pointless retry.
+    expect(within(dialog).queryByRole('button', { name: 'Erneut versuchen' })).toBeNull()
+  })
+
+  it('shows the same help on the page behind the dialog', async () => {
+    const failed = receiptFixture({
+      status: 'failed',
+      error: 'Der Bon ist auf dem Foto abgeschnitten.',
+      error_code: 'cut_off',
+    })
+    const user = userEvent.setup()
+    renderReceipt(failed)
+    await user.keyboard('{Escape}')
+
+    // The dialog and the page behind it say the same.
+    expect((await screen.findAllByText('Der Bon ist abgeschnitten')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/in zwei Teilen ohne Überlappung/).length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByRole('button', { name: /Neues Foto/, hidden: true }).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('lists what was noticed while reading a receipt that worked', async () => {
+    mockedApi.fetchLineItems.mockResolvedValue([beef])
+    renderReceipt(receiptFixture({ status: 'review', notes: ['cut_off', 'foreign_currency'] }))
+
+    const notes = await screen.findByLabelText('Hinweise zur Analyse')
+    expect(notes).toHaveTextContent('Der Bon wirkt abgeschnitten.')
+    expect(notes).toHaveTextContent('Der Bon ist nicht in Euro.')
+    expect(notes).toHaveTextContent('Die Preise wurden nicht übernommen')
+  })
+
+  it('shows no notes box for a clean receipt', async () => {
+    mockedApi.fetchLineItems.mockResolvedValue([beef])
+    renderReceipt(receiptFixture({ status: 'review', notes: [] }))
+    await screen.findByRole('heading', { name: 'Positionen' })
+    expect(screen.queryByLabelText('Hinweise zur Analyse')).toBeNull()
+  })
+
   it('offers to start a receipt that is still pending', async () => {
     const pending = receiptFixture({ status: 'pending', updated_at: new Date().toISOString() })
     receipts.startProcessing.mockResolvedValue()

@@ -1,14 +1,11 @@
 import { ArrowUp, Camera, ShieldCheck } from 'lucide-react'
 import { useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
-import { useNavigate } from 'react-router'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
-import { type LiveViewState, STEPS } from '@/features/processing/steps'
-import { UploadProgressDialog } from '@/features/processing/UploadProgressDialog'
+import { STEPS } from '@/features/processing/steps'
 import { cn } from '@/lib/utils'
-import { ACCEPT_ATTRIBUTE, validateReceiptFile } from '../file-validation'
-import { useUploadReceipt } from '../queries'
+import { ACCEPT_ATTRIBUTE } from '../file-validation'
+import { useUploadFlow } from '../upload/upload-flow-context'
 
 /** Drawn receipt with an upload badge; purely decorative. */
 function ReceiptIllustration({ uploading }: { uploading: boolean }) {
@@ -76,68 +73,17 @@ function HowItWorks() {
 
 export function ReceiptUpload() {
   const auth = useAuth()
-  const upload = useUploadReceipt()
-  const navigate = useNavigate()
+  const { uploadFile, isUploading, uploadingName } = useUploadFlow()
   const inputId = useId()
   const hintId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const [validationError, setValidationError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-  // The progress dialog opens the moment a file is chosen, not after the upload.
-  const [shown, setShown] = useState<{
-    fileName: string
-    previewUrl: string | null
-    dismissed: boolean
-  } | null>(null)
-  // Read in the upload's onSuccess, which closes over an older render.
-  const dismissedRef = useRef(false)
 
   if (auth.status !== 'authenticated') return null
-  const userId = auth.user.id
-
-  function closeDialog() {
-    setShown((current) => {
-      if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl)
-      return null
-    })
-  }
-
-  function startUpload(file: File) {
-    upload.mutate(
-      { file, userId },
-      {
-        onSuccess: ({ receipt }) => {
-          const stillWatching = !dismissedRef.current
-          closeDialog()
-          // Closed while uploading: the receipt simply shows up in the list below.
-          if (!stillWatching) return
-          const state: LiveViewState = { fromUpload: true }
-          void navigate(`/receipts/${receipt.id}`, { state })
-        },
-        onSettled: () => {
-          if (inputRef.current) inputRef.current.value = ''
-        },
-      },
-    )
-  }
 
   function handleFile(file: File | undefined) {
-    if (!file || upload.isPending) return
-    upload.reset()
-    const result = validateReceiptFile(file)
-    if (!result.ok) {
-      setValidationError(result.error)
-      return
-    }
-    setValidationError(null)
-    closeDialog()
-    const previewUrl =
-      typeof URL.createObjectURL === 'function' && file.type.startsWith('image/')
-        ? URL.createObjectURL(file)
-        : null
-    dismissedRef.current = false
-    setShown({ fileName: file.name, previewUrl, dismissed: false })
-    startUpload(file)
+    uploadFile(file)
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   function onChange(event: ChangeEvent<HTMLInputElement>) {
@@ -149,10 +95,6 @@ export function ReceiptUpload() {
     setIsDragging(false)
     handleFile(event.dataTransfer.files[0])
   }
-
-  const error =
-    validationError ??
-    (upload.isError && !shown ? 'Der Upload ist fehlgeschlagen. Bitte versuche es erneut.' : null)
 
   return (
     <section
@@ -171,7 +113,7 @@ export function ReceiptUpload() {
           accept={ACCEPT_ATTRIBUTE}
           className="peer sr-only"
           aria-describedby={hintId}
-          disabled={upload.isPending}
+          disabled={isUploading}
           onChange={onChange}
         />
         {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- drag & drop is a pointer-only enhancement; the file input is the keyboard path */}
@@ -192,17 +134,17 @@ export function ReceiptUpload() {
               'border-primary bg-brand/10 shadow-[0_0_0_6px_color-mix(in_oklab,var(--brand)_45%,transparent)]',
           )}
         >
-          <ReceiptIllustration uploading={upload.isPending} />
+          <ReceiptIllustration uploading={isUploading} />
           <span className="flex min-w-0 flex-col gap-2.5">
             <span className="text-2xl font-semibold tracking-tight">
-              {upload.isPending ? 'Wird hochgeladen …' : 'Bon hier ablegen'}
+              {isUploading ? 'Wird hochgeladen …' : 'Bon hier ablegen'}
             </span>
             <span id={hintId} className="text-[15px] leading-relaxed text-muted-foreground">
-              {upload.isPending
-                ? `„${upload.variables.file.name}“ wird vorbereitet und sicher gespeichert. Gleich siehst du jeden Schritt live.`
+              {isUploading
+                ? `„${uploadingName ?? 'Foto'}“ wird vorbereitet und sicher gespeichert. Gleich siehst du jeden Schritt live.`
                 : 'oder ein Foto auswählen. JPG, PNG, WebP oder HEIC, bis 10 MB. Danach zeigen wir dir live jeden Schritt.'}
             </span>
-            {!upload.isPending && (
+            {!isUploading && (
               <span className="mt-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-primary px-5 text-[15px] font-medium text-primary-foreground">
                 <Camera aria-hidden className="size-4" />
                 Foto auswählen
@@ -213,38 +155,6 @@ export function ReceiptUpload() {
       </div>
 
       <HowItWorks />
-
-      {shown && !shown.dismissed && (upload.isPending || upload.isError) && (
-        <UploadProgressDialog
-          fileName={shown.fileName}
-          previewUrl={shown.previewUrl}
-          failed={upload.isError}
-          onRetry={() => {
-            if (upload.variables) startUpload(upload.variables.file)
-          }}
-          onChooseOther={() => {
-            closeDialog()
-            upload.reset()
-            inputRef.current?.click()
-          }}
-          onOpenChange={(open) => {
-            if (open) return
-            if (upload.isError) {
-              closeDialog()
-              upload.reset()
-            } else {
-              dismissedRef.current = true
-              setShown((current) => current && { ...current, dismissed: true })
-            }
-          }}
-        />
-      )}
-
-      {error && (
-        <Alert variant="destructive" role="alert" className="lg:col-span-2">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <p className="flex gap-2 text-[13px] leading-normal text-muted-foreground lg:col-span-2">
         <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />

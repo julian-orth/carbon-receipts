@@ -15,6 +15,8 @@ type ProgressPanelProps = {
   /** Status headline of the right column ("Bon wird gelesen …", "Fertig! …"). */
   title: string
   description: string
+  /** What to do next after a failure: a short list under the description. */
+  hints?: readonly string[]
   fileName: string | null
   /** The analysis needs longer than usual (e.g. a fallback after an overloaded service). */
   slow?: boolean
@@ -35,6 +37,7 @@ export function ProgressPanel({
   waiting,
   title,
   description,
+  hints,
   fileName,
   slow = false,
   paper,
@@ -109,6 +112,13 @@ export function ProgressPanel({
             <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
               {description}
             </DialogDescription>
+            {failed && hints && hints.length > 0 && (
+              <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground">
+                {hints.map((hint) => (
+                  <li key={hint}>{hint}</li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Phones: one line instead of the whole list, so the receipt stays in view. */}

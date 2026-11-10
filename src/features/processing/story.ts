@@ -1,4 +1,5 @@
 import type { Summary } from './progress'
+import { failureHelp } from '@/features/receipts/failure'
 import { STEPS } from './steps'
 
 export type Story = { title: string; description: string }
@@ -9,6 +10,7 @@ type StoryInput = {
   done: boolean
   waiting: boolean
   error: string | null
+  errorCode?: string | null
   summary: Summary | null
 }
 
@@ -19,7 +21,7 @@ export function buildStory(input: StoryInput): Story {
   const { summary } = input
   if (input.failed) {
     return {
-      title: 'Das hat leider nicht geklappt',
+      title: failureHelp(input.errorCode).title,
       description:
         input.error ??
         'Die Analyse ist fehlgeschlagen. Dein Foto ist gespeichert, du kannst es erneut versuchen.',
