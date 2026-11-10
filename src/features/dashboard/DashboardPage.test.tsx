@@ -86,7 +86,9 @@ describe('DashboardPage', () => {
     renderDashboard()
     expect(screen.getByRole('status', { name: 'Übersicht wird geladen' })).toBeInTheDocument()
     await screen.findByRole('region', { name: 'Verlauf' })
-    expect(mockedApi.fetchMonthlyTotals).toHaveBeenCalledWith('2026-06-01')
+    // Monthly figures are loaded for 12 months once; the 6-month view is a slice of them.
+    expect(mockedApi.fetchMonthlyTotals).toHaveBeenCalledWith('2025-12-01')
+    expect(mockedApi.fetchHotspots).toHaveBeenCalledWith('2026-06-01')
     expect(screen.getByRole('button', { name: '6 Monate' })).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -133,18 +135,41 @@ describe('DashboardPage', () => {
     expect(within(goal).getByText('Noch 45 kg CO₂e bis zum Ziel.')).toBeInTheDocument()
   })
 
-  it('switches the range', async () => {
+  it('switches the range without a loading state or a refetch of the monthly figures', async () => {
     const user = userEvent.setup()
     renderDashboard()
     await screen.findByRole('region', { name: 'Verlauf' })
+    expect(figure('Summe, 6 Monate')).toHaveTextContent('40 kg CO₂e')
+
+    await user.click(screen.getByRole('button', { name: '3 Monate' }))
+
+    // Sliced locally: new figures right away, never the skeleton.
+    expect(screen.queryByRole('status', { name: 'Übersicht wird geladen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '3 Monate' })).toHaveAttribute('aria-pressed', 'true')
+    expect(figure('Summe, 3 Monate')).toBeInTheDocument()
+    expect(mockedApi.fetchMonthlyTotals).toHaveBeenCalledTimes(1)
+    expect(mockedApi.fetchGroupTotals).toHaveBeenCalledTimes(1)
+    // Only the hotspots depend on the range, and they keep the old list while loading.
+    await waitFor(() => expect(mockedApi.fetchHotspots).toHaveBeenCalledWith('2026-09-01'))
+  })
+
+  it('keeps the running month and the goal hint independent of the range', async () => {
+    const user = userEvent.setup()
+    renderDashboard()
+    const goal = await screen.findByRole('region', { name: 'Monatsziel' })
+    const before = goal.textContent
 
     await user.click(screen.getByRole('button', { name: '12 Monate' }))
+    await user.click(screen.getByRole('button', { name: '3 Monate' }))
 
-    await waitFor(() => expect(mockedApi.fetchMonthlyTotals).toHaveBeenCalledWith('2025-12-01'))
-    expect(screen.getByRole('button', { name: '12 Monate' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(screen.getByRole('region', { name: 'Monatsziel' }).textContent).toBe(before)
+  })
+
+  it('places the range switch in its own section for the cards below it', async () => {
+    renderDashboard()
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Auswertung' })
+    expect(heading).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Zeitraum' })).toBeInTheDocument()
   })
 
   it('lets the user set a first goal and validates it', async () => {

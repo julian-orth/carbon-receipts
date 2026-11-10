@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchGroupTotals,
   fetchHotspots,
@@ -26,6 +26,8 @@ export function useHotspots(fromMonth: string) {
   return useQuery({
     queryKey: dashboardKeys.hotspots(fromMonth),
     queryFn: () => fetchHotspots(fromMonth),
+    // Switching the range keeps the old list on screen until the new one arrives.
+    placeholderData: keepPreviousData,
   })
 }
 

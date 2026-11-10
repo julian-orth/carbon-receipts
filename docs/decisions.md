@@ -367,3 +367,15 @@ snapshot of the factor (which only protects against later factor changes) would 
 backfill for no benefit. If a factor ever has to change, the snapshot becomes necessary first:
 otherwise old receipts keep the old result while the table and every edited item use the new one.
 New categories can be added without that problem. The data basis page states the freeze.
+
+## 030 – The range switch gets its own section and no longer reloads
+
+The switch sat in the page header but only changed part of the page (trend, areas, key figures,
+hotspots, swaps); the hero – the running month, the projection and the goal – never moved, and
+its goal hint secretly followed the range. Switching also replaced the whole page with skeletons,
+because every query key contained the range.
+
+Now: the switch lives in an "Auswertung" section below the hero and says what it controls. Monthly
+totals and area totals are loaded once for 12 months and sliced in the browser (no request, no
+loading state); only the hotspots depend on the range and keep the old list, dimmed, until the new
+one arrives (`keepPreviousData`). The goal hint uses a fixed basis of six months.

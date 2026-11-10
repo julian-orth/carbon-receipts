@@ -29,6 +29,11 @@ export type FactorRef = {
 
 export type RangeMonths = 3 | 6 | 12
 
+/** The longest selectable range; monthly figures are loaded for it once and sliced. */
+export const MAX_RANGE_MONTHS: RangeMonths = 12
+/** Basis of the 'average month' used to suggest a goal – independent of the chosen range. */
+export const GOAL_BASIS_MONTHS = 6
+
 /** First day of the month, as ISO date (UTC-free, local calendar). */
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`

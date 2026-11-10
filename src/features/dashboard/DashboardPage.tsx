@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmissionCategories } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
+import { cn } from '@/lib/utils'
 import { AlternativesList } from './components/AlternativesList'
 import { useReceipts, useReceiptTotals } from '@/features/receipts/queries'
 import { DashboardCard } from './components/DashboardCard'
@@ -18,6 +19,8 @@ import { RangeFilter } from './components/RangeFilter'
 import { RangeStats } from './components/RangeStats'
 import {
   averageCompletedMonth,
+  GOAL_BASIS_MONTHS,
+  MAX_RANGE_MONTHS,
   buildMonthSeries,
   compareCompletedMonths,
   lastMonths,
@@ -29,6 +32,30 @@ import {
 } from './dashboard-logic'
 import { useGroupTotals, useHotspots, useMonthlyGoal, useMonthlyTotals } from './queries'
 
+const stale = 'transition-opacity duration-200'
+
+/** Heading for everything that follows the range; the hero above is the running month. */
+function RangeSection({
+  range,
+  onChange,
+}: {
+  range: RangeMonths
+  onChange: (value: RangeMonths) => void
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 pt-2">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">Auswertung</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Der gewählte Zeitraum gilt für alle Karten darunter. Der laufende Monat oben bleibt
+          gleich.
+        </p>
+      </div>
+      <RangeFilter value={range} onChange={onChange} />
+    </div>
+  )
+}
+
 const monthName = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' })
 
 export function DashboardPage({ today: todayProp }: { today?: Date }) {
@@ -36,9 +63,12 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const [today] = useState(() => todayProp ?? new Date())
   const [range, setRange] = useState<RangeMonths>(6)
   const fromMonth = lastMonths(today, range)[0] ?? ''
+  // Monthly figures are loaded once for the longest range; a shorter one is just a slice, so
+  // switching the range neither refetches nor flashes a loading state.
+  const dataFromMonth = lastMonths(today, MAX_RANGE_MONTHS)[0] ?? ''
 
-  const totals = useMonthlyTotals(fromMonth)
-  const groups = useGroupTotals(fromMonth)
+  const totals = useMonthlyTotals(dataFromMonth)
+  const groups = useGroupTotals(dataFromMonth)
   const hotspots = useHotspots(fromMonth)
   const goal = useMonthlyGoal()
   const categories = useEmissionCategories()
@@ -49,10 +79,11 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
     [categories.data],
   )
 
-  const series = useMemo(
-    () => buildMonthSeries(totals.data ?? [], today, range),
-    [totals.data, today, range],
+  const fullSeries = useMemo(
+    () => buildMonthSeries(totals.data ?? [], today, MAX_RANGE_MONTHS),
+    [totals.data, today],
   )
+  const series = useMemo(() => fullSeries.slice(-range), [fullSeries, range])
   const queries = [totals, groups, hotspots, goal, categories, receipts, totalsByReceipt]
 
   const header = (
@@ -64,7 +95,6 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
         </h1>
         <p className="text-muted-foreground">Dein CO₂-Fußabdruck aus bestätigten Belegen.</p>
       </div>
-      <RangeFilter value={range} onChange={setRange} />
     </div>
   )
 
@@ -107,6 +137,9 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const comparison = compareCompletedMonths(series)
   const currentKg = series.at(-1)?.totalKg ?? 0
   const averageKg = averageCompletedMonth(series)
+  // The hero is about the running month; its goal hint must not move with the range.
+  const goalBasisKg = averageCompletedMonth(fullSeries.slice(-GOAL_BASIS_MONTHS))
+  const hotspotsStale = hotspots.isPlaceholderData
   const groupTotals = sumByGroup(groups.data ?? [], fromMonth)
   const alternatives = suggestAlternatives(hotspots.data ?? [], categories.data ?? [])
   const topHotspots = (hotspots.data ?? []).slice(0, 5)
@@ -122,6 +155,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
         {open.length > 0 && (
           <NextStepCard openCount={open.length} firstOpenId={open[0]?.id ?? null} />
         )}
+        <RangeSection range={range} onChange={setRange} />
         <div className="flex flex-col items-center gap-3 rounded-3xl border bg-card px-6 py-14 text-center">
           <p className="text-lg font-medium">Noch keine bestätigten Belege in diesem Zeitraum</p>
           <p className="max-w-md text-muted-foreground">
@@ -151,14 +185,17 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
             projectedKg={projectMonth(currentKg, today)}
             comparison={comparison}
             goal={goal.data ?? null}
-            averageKg={averageKg}
+            averageKg={goalBasisKg}
           />
         </div>
-        <div className="flex flex-col gap-5 sm:gap-6 lg:col-span-4">
+        <div className="flex lg:col-span-4 [&>*]:flex-1">
           <NextStepCard openCount={open.length} firstOpenId={open[0]?.id ?? null} />
-          <RangeStats range={range} totalKg={rangeTotal} stats={stats} />
         </div>
+      </div>
 
+      <RangeSection range={range} onChange={setRange} />
+
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
         <DashboardCard
           title="Verlauf"
           description="CO₂e pro Monat aus bestätigten Belegen"
@@ -174,22 +211,26 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
         >
           <MonthlyTrendChart series={series} goalKg={goalKg} />
         </DashboardCard>
-        <DashboardCard
-          title="Nach Bereich"
-          description={`Letzte ${range} Monate`}
-          className="lg:col-span-4"
-        >
-          {groupTotals.length > 0 ? (
-            <GroupBreakdownChart groups={groupTotals} />
-          ) : (
-            <p className="text-sm text-muted-foreground">Keine Daten im Zeitraum.</p>
-          )}
-        </DashboardCard>
+        <div className="flex flex-col gap-5 sm:gap-6 lg:col-span-4">
+          <RangeStats range={range} totalKg={rangeTotal} stats={stats} />
+          <DashboardCard
+            title="Nach Bereich"
+            description={`Letzte ${range} Monate`}
+            className="flex-1"
+          >
+            {groupTotals.length > 0 ? (
+              <GroupBreakdownChart groups={groupTotals} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Keine Daten im Zeitraum.</p>
+            )}
+          </DashboardCard>
+        </div>
 
         <DashboardCard
           title="Hotspots"
           description="Deine größten einzelnen Posten"
-          className="lg:col-span-5"
+          className={cn('lg:col-span-5', stale)}
+          busy={hotspotsStale}
         >
           <HotspotList hotspots={topHotspots} categoriesBySlug={categoriesBySlug} />
         </DashboardCard>
@@ -204,7 +245,8 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
               </p>
             )
           }
-          className="lg:col-span-7"
+          className={cn('lg:col-span-7', stale)}
+          busy={hotspotsStale}
         >
           <AlternativesList suggestions={alternatives} categoriesBySlug={categoriesBySlug} />
         </DashboardCard>
