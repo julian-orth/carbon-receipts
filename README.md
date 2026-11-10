@@ -16,9 +16,9 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-| Review                                 | Mobile                                                                                  |
-| -------------------------------------- | --------------------------------------------------------------------------------------- |
-| ![Review](docs/screenshots/review.png) | <img src="docs/screenshots/dashboard-mobile.png" width="260" alt="Dashboard on mobile"> |
+| Review                                 | Data basis                                     | Mobile                                                                                  |
+| -------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![Review](docs/screenshots/review.png) | ![Data basis](docs/screenshots/data-basis.png) | <img src="docs/screenshots/dashboard-mobile.png" width="260" alt="Dashboard on mobile"> |
 
 ## Features
 

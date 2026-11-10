@@ -90,6 +90,10 @@ jobs:
         working-directory: supabase/functions/process-receipt
         run: deno check index.ts
 
+      - name: Typecheck delete-account
+        working-directory: supabase/functions/delete-account
+        run: deno check index.ts
+
   e2e:
     name: E2E (Playwright, local Supabase, mock LLM)
     runs-on: ubuntu-latest
@@ -120,7 +124,10 @@ jobs:
             echo "VITE_DEMO_EMAIL=demo@carbon-receipts.app"
             echo "VITE_DEMO_PASSWORD=demo-carbon-receipts"
           } > .env.local
-          echo "LLM_PROVIDERS=mock" > supabase/functions/.env
+          {
+            echo "LLM_PROVIDERS=mock"
+            echo "DEMO_EMAIL=demo@carbon-receipts.app"
+          } > supabase/functions/.env
 
       - name: Serve edge functions
         run: nohup supabase functions serve --env-file supabase/functions/.env > functions.log 2>&1 &
