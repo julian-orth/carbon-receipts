@@ -31,6 +31,8 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
   other open items immediately, so the same fix is never needed twice
 - **Dashboard** with monthly trend vs. goal, breakdown by area, top hotspots and like-for-like
   alternatives with the saving for the actual purchase
+- **Data basis page** listing every emission factor with value, unit and the exact table row of its
+  source, plus the known limits and a CSV download
 - **Accessible**: semantic HTML, keyboard operable, visible focus, table view for the chart, status
   never by colour alone, axe scan in E2E
 
@@ -75,6 +77,10 @@ The reasoning behind these and other choices – including what was traded away 
 75 categories, each storing the table and row it comes from – including ready meals (per portion)
 and pet food. Known limitations (system boundaries, density assumption for beverages, per-piece
 eggs, a weaker source for pet food) are listed in decisions 011 and 019.
+
+The values were transcribed from the studies into the migrations; nothing is fetched at runtime. They
+are a fixed state (November 2026) and deliberately not updated – so a stored CO₂e value always
+matches the table (decision 029). The in-app page "Datenbasis" shows the complete table.
 
 ## Tech stack
 
@@ -178,9 +184,9 @@ says so, and the public demo uses sample data only.
 
 ## Next steps
 
-- **CSV bank exports** – need spend-based factors (kg CO₂e per EUR); there is no open table for
-  Germany yet, EXIOBASE would have to be mapped to consumption categories
-- **PDF receipts**
-- **Snapshot of the factor per line item**, so later factor updates don't change history
 - **Upstream emissions for fuel**, to match the life-cycle boundary of the food factors
-- **Households / shared accounts**, PWA with offline capture, export, i18n
+- **Households / shared accounts**, PWA with offline capture, i18n
+
+Deliberately left out: CSV bank exports and PDF import (decision 013) – a bank line has no items,
+so only coarse spend-based factors (kg CO₂e per EUR, off by a factor of 2–5) would be possible,
+and the one thing the app is good at, telling beef from vegetables, would be lost.

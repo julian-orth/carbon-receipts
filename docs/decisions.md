@@ -342,3 +342,28 @@ for review, otherwise an upload) and key figures of the range from the receipts 
 cache (no new SQL). Trend in one green ramp with a swatch legend; areas, hotspots and swaps use
 the category icons and group colours of the picker, so identity never relies on bar colour.
 "Alternativen" became "Sparpotenzial" with the summed saving for what was actually bought.
+
+## 028 – Data basis page: every factor, visible and exportable
+
+The factors were only visible one at a time while picking a category. The new page "Datenbasis"
+(`/datenbasis`, main navigation) lists all of them, grouped, with value, unit and the exact source
+(table and row of the study, linked), the three sources with their factor counts, and the known
+limits (averages per category, life-cycle vs. combustion-only boundary, per-piece assumptions). A
+CSV download gives the same table as a snapshot of the data basis.
+
+Completeness is guarded on three levels instead of trusted: `fetchCategories` asks for the exact
+row count and fails if fewer rows arrive (a server row limit would otherwise cut the table
+silently); groups the UI does not know are appended, never dropped; and the E2E test compares the
+rendered rows with the total the server reports (`content-range`) and requires a source link on
+every row. A factor without a link is flagged on the page. This is the reference table only; a
+per-line-item snapshot is not needed because of decision 029.
+
+## 029 – Emission factors are a fixed state, no per-item snapshot
+
+The factors are transcribed from the studies into migrations (nothing is fetched at runtime) and
+are **not updated** after publication – this is a portfolio project, a frozen state is enough. A
+stored `co2e_kg` therefore always equals quantity × the factor in the table, and a per-line-item
+snapshot of the factor (which only protects against later factor changes) would add columns and a
+backfill for no benefit. If a factor ever has to change, the snapshot becomes necessary first:
+otherwise old receipts keep the old result while the table and every edited item use the new one.
+New categories can be added without that problem. The data basis page states the freeze.
