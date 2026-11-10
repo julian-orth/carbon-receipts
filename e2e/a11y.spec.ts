@@ -1,8 +1,9 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import { expect, type Page, test } from '@playwright/test'
-import { signInAsDemo } from './helpers.ts'
+import { settleAnimations, signInAsDemo } from './helpers.ts'
 
 async function expectNoSeriousViolations(page: Page) {
+  await settleAnimations(page)
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze()
@@ -25,7 +26,10 @@ test('dashboard, receipts and review', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Verlauf' })).toBeVisible()
   await expectNoSeriousViolations(page)
 
-  await page.getByRole('link', { name: 'Belege' }).click()
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: 'Belege' })
+    .click()
   await expect(page.getByRole('list', { name: 'Deine Belege' })).toBeVisible()
   await expectNoSeriousViolations(page)
 

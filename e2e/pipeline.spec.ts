@@ -7,7 +7,10 @@ import { signInWithMagicLink, uniqueEmail } from './helpers.ts'
 test('magic link → upload → AI extraction → review → dashboard', async ({ page }) => {
   await signInWithMagicLink(page, uniqueEmail('e2e'))
 
-  await page.getByRole('link', { name: 'Belege' }).click()
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: 'Belege' })
+    .click()
   await expect(page.getByText('Noch keine Belege')).toBeVisible()
 
   await page
@@ -35,7 +38,8 @@ test('magic link → upload → AI extraction → review → dashboard', async (
   if ((await goudaToggle.getAttribute('aria-expanded')) !== 'true') await goudaToggle.click()
   const gouda = page.getByRole('form', { name: 'Gouda jung Scheiben' })
   await gouda.getByLabel('Menge').fill('0,2')
-  await gouda.getByRole('radio', { name: 'kg' }).check()
+  await gouda.locator('label', { hasText: /^kg$/ }).click()
+  await expect(gouda.getByRole('radio', { name: 'kg', exact: true })).toBeChecked()
   await expect(gouda.getByText('1,14 kg CO₂e')).toBeVisible()
   const reviewAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
