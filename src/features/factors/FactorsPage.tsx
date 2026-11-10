@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CategoryTile, IntensityMeter } from '@/features/categories/CategoryTile'
 import { formatFactor } from '@/features/categories/category-visuals'
 import { type EmissionCategory, useEmissionCategories } from '@/features/categories/categories'
+import { AccuracyCard } from './AccuracyCard'
 import { filterFactors, factorsToCsv, groupFactors, summarizeSources } from './factors-logic'
 
 const NOTES = [
@@ -120,6 +121,8 @@ function FactorsContent({ factors }: { factors: EmissionCategory[] }) {
           ))}
         </ul>
       </section>
+
+      <AccuracyCard />
 
       <section aria-labelledby="sources-title" className="space-y-4">
         <h2 id="sources-title" className="text-lg font-semibold tracking-tight">

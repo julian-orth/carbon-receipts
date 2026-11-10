@@ -34,13 +34,8 @@ const extractedItemSchema = z.object({
 })
 
 /** What the model may report about the photo itself; anything else is dropped. */
-export const EXTRACTION_ISSUES = [
-  'unreadable',
-  'cut_off',
-  'multiple_receipts',
-  'non_food_only',
-] as const
-export type ExtractionIssue = (typeof EXTRACTION_ISSUES)[number]
+const EXTRACTION_ISSUES = ['unreadable', 'cut_off', 'multiple_receipts', 'non_food_only'] as const
+type ExtractionIssue = (typeof EXTRACTION_ISSUES)[number]
 
 const issueSet: ReadonlySet<string> = new Set(EXTRACTION_ISSUES)
 

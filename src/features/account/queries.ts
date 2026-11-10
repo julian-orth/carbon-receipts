@@ -7,7 +7,7 @@ import {
   updateDisplayName,
 } from './api'
 
-export const accountKeys = {
+const accountKeys = {
   all: ['account'] as const,
   profile: () => [...accountKeys.all, 'profile'] as const,
   usage: () => [...accountKeys.all, 'usage'] as const,
