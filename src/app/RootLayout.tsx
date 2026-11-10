@@ -4,8 +4,14 @@ import { useAuth } from '@/features/auth/auth-context'
 import { UserMenu } from '@/features/auth/UserMenu'
 import { UploadFlowProvider } from '@/features/receipts/upload/UploadFlowProvider'
 import { ProcessingDock } from '@/features/processing/components/ProcessingDock'
+import { UploadButton } from '@/features/receipts/upload/UploadButton'
 import { MainNav } from './MainNav'
 import { ThemeToggle } from './ThemeToggle'
+
+const FOOTER_LINKS = [
+  { to: '/datenschutz', label: 'Datenschutz' },
+  { to: '/impressum', label: 'Impressum' },
+]
 
 export function RootLayout() {
   const auth = useAuth()
@@ -32,7 +38,9 @@ export function RootLayout() {
             </Link>
             <MainNav />
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-              <ThemeToggle />
+              {/* Signed in, the theme lives in the account menu. */}
+              {auth.status === 'unauthenticated' && <ThemeToggle />}
+              <UploadButton compact />
               <UserMenu />
             </div>
           </nav>
@@ -40,6 +48,21 @@ export function RootLayout() {
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
           <Outlet />
         </main>
+        <footer className="border-t">
+          <ul className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-5 text-sm text-muted-foreground sm:px-6">
+            <li className="mr-auto">Carbon Receipts · Portfolio-Projekt</li>
+            {FOOTER_LINKS.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </footer>
         {auth.status === 'authenticated' && <ProcessingDock userId={auth.user.id} />}
       </div>
     </UploadFlowProvider>

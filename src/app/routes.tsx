@@ -15,6 +15,18 @@ export const routes: RouteObject[] = [
     hydrateFallbackElement: <FullPageSpinner />,
     children: [
       { path: 'login', element: <LoginPage /> },
+      {
+        path: 'impressum',
+        lazy: async () => ({
+          Component: (await import('@/features/legal/ImpressumPage')).ImpressumPage,
+        }),
+      },
+      {
+        path: 'datenschutz',
+        lazy: async () => ({
+          Component: (await import('@/features/legal/PrivacyPage')).PrivacyPage,
+        }),
+      },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
       {
         element: <RequireAuth />,
@@ -29,6 +41,12 @@ export const routes: RouteObject[] = [
             path: 'receipts',
             lazy: async () => ({
               Component: (await import('@/features/receipts/ReceiptsPage')).ReceiptsPage,
+            }),
+          },
+          {
+            path: 'konto',
+            lazy: async () => ({
+              Component: (await import('@/features/account/AccountPage')).AccountPage,
             }),
           },
           {

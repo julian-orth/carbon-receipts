@@ -398,3 +398,36 @@ hiccup), a new photo where the photo is the problem, nothing pointless in betwee
   provider in the layout, so any page can start it – see the header and dashboard buttons.
 - `complete_receipt_processing` / `claim_receipt` were redefined on the latest versions (progress
   step, item positions); the pgTAP suite caught an earlier draft that would have dropped those.
+
+## 032 – Upload from anywhere, with a sample receipt
+
+"Beleg hochladen" is in the header on every page, in the dashboard's next-step card and in its
+empty state, and on the receipts page – all start the one shared upload flow (031). A visitor
+without a bon at hand can use "Beispielbeleg ausprobieren": it uploads `public/sample-receipt.png`
+through the normal flow, so the real pipeline is shown, not a mock. The file is a **placeholder**
+(rendered from HTML, clearly labelled); replace it with the real photo and, if the extension
+changes, `SAMPLE_RECEIPT` in `upload/sample-receipt.ts`. A missing file is reported ("noch nicht
+verfügbar") instead of being uploaded as the app's HTML.
+
+## 033 – Account page, avatar menu, deleting everything
+
+The header's e-mail and sign-out button became an avatar menu (initials of the name or e-mail):
+account page, appearance (theme moved here; signed-out visitors keep the toggle) and sign-out.
+The account page shows profile (optional name), usage (receipts, confirmed, CO₂e, products,
+today's analyses against the daily limit), a JSON download of all stored data (portability) and
+"Konto löschen".
+
+Deleting runs in the edge function `delete-account` with the service role, because the photos live
+in Storage and SQL cannot remove them: files first (a failure leaves the account intact), then
+the auth user; profile, receipts, items, mappings, goals and usage follow by `on delete cascade`.
+The shared demo account is refused (`DEMO_EMAIL`, also checked in the UI). The page needs the
+typed word "löschen" – the e2e test deletes a real user and signs up again with the same address.
+
+Impressum and Datenschutz are public pages with a footer link. Operator details are **not
+invented**: `legal-config.ts` holds `null` placeholders that render as visible marks plus a
+warning until filled in. The privacy text is a draft from what the app actually does (Supabase,
+Vercel, Gemini/Groq on free tiers, no tracking); it is not legal advice – have it checked before
+publishing.
+
+The destructive button variant now uses the danger tokens: red text on a faint red tint was below
+4.5:1 (axe found it on the new page).

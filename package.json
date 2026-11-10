@@ -21,7 +21,7 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local --schema public < /dev/null > supabase/functions/_shared/database.types.ts && prettier --write supabase/functions/_shared/database.types.ts",
-    "functions:check": "cd supabase/functions/process-receipt && npx --yes deno@2 check index.ts",
+    "functions:check": "(cd supabase/functions/process-receipt && npx --yes deno@2 check index.ts) && (cd supabase/functions/delete-account && npx --yes deno@2 check index.ts)",
     "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
     "test:e2e": "playwright test",
     "knip": "knip"

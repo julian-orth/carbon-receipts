@@ -417,3 +417,6 @@ enabled = true
 # legacy and asymmetric signing keys.
 [functions.process-receipt]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
