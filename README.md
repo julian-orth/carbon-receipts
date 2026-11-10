@@ -7,6 +7,9 @@ suggests a category; the app maps them to published emission factors and calcula
 deterministically. Uncertain matches go to a review screen, corrections are learned, and a
 dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
 
+**Live demo:** _follows after the deployment_ · **Try it:** "Demo ansehen" on the login page, or
+"Beispielbeleg ausprobieren" to run the real pipeline without a bon at hand.
+
 > **The AI suggests, the code calculates.** The model only extracts text and proposes a category.
 > Every CO₂e value is `quantity × factor`, computed by one tested function and traceable to a
 > table row in a published study.
@@ -26,6 +29,12 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
   every response, a daily quota per user and a deterministic mock provider for local work and E2E
 - **Missing amounts handled**: real receipts rarely print pack sizes, so the model may suggest a
   typical one – stored as `estimated` and flagged, never silently trusted
+- **Failures that help**: the model also reports what it sees (not a receipt, unreadable, cut off,
+  foreign currency, no food) and the code turns that into concrete advice – a new photo where the
+  photo is the problem, a retry only where it can help; foreign receipts are read, tall receipts
+  keep a readable size
+- **Upload from anywhere**: header button, dashboard card and receipts page share one flow; a
+  bundled sample receipt shows the whole pipeline in one click
 - **Review screen** with confidence flags, a live CO₂e preview, the factor and its source
 - **Learns from every confirmation**: category _and_ amount per product; a correction is applied to
   other open items immediately, so the same fix is never needed twice
@@ -33,6 +42,8 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
   alternatives with the saving for the actual purchase
 - **Data basis page** listing every emission factor with value, unit and the exact table row of its
   source, plus the known limits and a CSV download
+- **Account page**: profile, usage and today's AI quota, a JSON download of all data, and deleting
+  the account together with its photos (edge function); Impressum and Datenschutz pages
 - **Accessible**: semantic HTML, keyboard operable, visible focus, table view for the chart, status
   never by colour alone, axe scan in E2E
 
@@ -82,6 +93,23 @@ The values were transcribed from the studies into the migrations; nothing is fet
 are a fixed state (November 2026) and deliberately not updated – so a stored CO₂e value always
 matches the table (decision 029). The in-app page "Datenbasis" shows the complete table.
 
+## Accuracy
+
+How well does the AI read real receipts? Measured by hand, receipt by receipt, against the paper
+bon. **Not measured yet** – the values below are placeholders and are filled in from one place
+(`src/features/factors/accuracy.ts`), which also feeds the "Datenbasis" page.
+
+| Metric           | What is counted                                                        | Result |
+| ---------------- | ---------------------------------------------------------------------- | ------ |
+| Items found      | share of the bon's article lines that were found                       | –      |
+| Category correct | share of found items whose category needed no correction               | –      |
+| Quantity correct | share of items with the right amount (printed or sensibly estimated)   | –      |
+| CO₂e total close | share of receipts whose total is within 10 % of the hand-checked total | –      |
+| Test set         | number and kinds of real receipts (supermarkets, discounters, markets) | –      |
+
+Method: every receipt is processed once with the production setup; items, categories, amounts and
+the total are compared with the paper bon; every miss is listed, not only the share.
+
 ## Tech stack
 
 React 19 · TypeScript (strict) · Vite · TanStack Query · React Router · Tailwind CSS + shadcn/ui ·
@@ -90,14 +118,17 @@ Gemini Flash / Groq · Vitest + Testing Library · pgTAP · Playwright + axe · 
 
 ## Quality
 
-| Layer            | What                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------- |
-| Unit & component | 248 Vitest tests: calculation, units, normalization, LLM fallback, Zod schema, all pages      |
-| Database         | 55 pgTAP tests: RLS per role, grants, status transitions, quota, atomic processing, views     |
-| Edge function    | Deno type check in CI                                                                         |
-| End-to-end       | Playwright on desktop + mobile: magic link → upload → AI → Realtime → review → dashboard, axe |
-| Static analysis  | strict TypeScript, type-aware lint (no floating promises, no unchecked casts), knip           |
-| CI               | format, lint, knip, typecheck, tests, build · DB tests + types drift · Deno check · E2E       |
+| Layer            | What                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| Unit & component | 398 Vitest tests: calculation, units, normalization, LLM fallback, extraction assessment, all pages      |
+| Database         | 74 pgTAP tests: RLS per role, grants, status transitions, failure codes, quota, atomic processing, views |
+| Edge function    | Deno type check of both functions in CI                                                                  |
+| End-to-end       | Playwright on desktop + mobile: magic link → upload → AI → Realtime → review → dashboard, axe            |
+| Static analysis  | strict TypeScript, type-aware lint (no floating promises, no unchecked casts), knip                      |
+| CI               | format, lint, knip, typecheck, tests, build · DB tests + types drift · Deno check · E2E                  |
+
+Lighthouse (login page, production build, mobile preset, measured locally on 2026-11-10):
+Performance 94 · Accessibility 100 · Best practices 96 · SEO 100.
 
 ## Getting started
 
@@ -131,7 +162,7 @@ npm run dev
 | `npm run db:test`         | pgTAP tests                                       |
 | `npm run db:types`        | Regenerate database types                         |
 | `npm run functions:serve` | Serve edge functions locally                      |
-| `npm run functions:check` | Deno type check of the edge function              |
+| `npm run functions:check` | Deno type check of both edge functions            |
 
 ## Project structure
 

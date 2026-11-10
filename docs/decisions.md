@@ -431,3 +431,17 @@ publishing.
 
 The destructive button variant now uses the danger tokens: red text on a faint red tint was below
 4.5:1 (axe found it on the new page).
+
+## 034 – Accuracy is a placeholder until measured; small hardening found on the way
+
+The AI's accuracy is not claimed anywhere until measured by hand: `accuracy.ts` holds `null`s that
+render as "noch nicht gemessen" on the Datenbasis page, and the README table has dashes. One file
+feeds the page; entering the numbers is the only step left.
+
+Found and fixed while building: dashboard cards were 13 px wider than a 360 px phone (grid items
+need `min-w-0`); the swap rows cut long category names; the manifest had only an SVG icon (PNG 192
+and 512 added, plus an upload shortcut); axe caught a `<p>` inside a `<dl>` in the new card.
+Security look at what is new: the upload bucket enforces size and image types server-side, users
+only reach their own folder, `error_code`/`notes` are not writable by users (pgTAP), no secrets in
+the Git history, no `innerHTML`. CORS on the functions is `*`, which is fine because they are
+token-authenticated, not cookie-based.
