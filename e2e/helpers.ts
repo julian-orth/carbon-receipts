@@ -48,3 +48,14 @@ export async function signInAsDemo(page: Page) {
   await page.getByRole('button', { name: 'Demo ansehen' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Übersicht' })).toBeVisible()
 }
+
+/** Waits for finite animations (page header fade-in) – axe would measure half-transparent text. */
+export async function settleAnimations(page: Page) {
+  // A string: the e2e project has no DOM typings, and the code runs in the browser anyway.
+  await page.evaluate(`Promise.all(
+    document
+      .getAnimations()
+      .filter((animation) => animation.effect.getComputedTiming().iterations !== Infinity)
+      .map((animation) => animation.finished.catch(() => undefined)),
+  )`)
+}

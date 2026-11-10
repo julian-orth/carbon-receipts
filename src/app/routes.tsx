@@ -32,6 +32,12 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: 'datenbasis',
+            lazy: async () => ({
+              Component: (await import('@/features/factors/FactorsPage')).FactorsPage,
+            }),
+          },
+          {
             path: 'receipts/:receiptId',
             lazy: async () => ({
               Component: (await import('@/features/review/ReviewPage')).ReviewPage,
