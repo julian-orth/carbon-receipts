@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
 import { STEPS } from '@/features/processing/steps'
 import { cn } from '@/lib/utils'
+import { SampleReceiptButton } from '../upload/SampleReceiptButton'
 import { ACCEPT_ATTRIBUTE } from '../file-validation'
 import { useUploadFlow } from '../upload/upload-flow-context'
 
@@ -155,6 +156,10 @@ export function ReceiptUpload() {
       </div>
 
       <HowItWorks />
+
+      <div className="lg:col-span-2">
+        <SampleReceiptButton className="-ml-3" />
+      </div>
 
       <p className="flex gap-2 text-[13px] leading-normal text-muted-foreground lg:col-span-2">
         <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />

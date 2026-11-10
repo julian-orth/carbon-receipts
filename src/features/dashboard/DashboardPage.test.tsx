@@ -204,10 +204,8 @@ describe('DashboardPage', () => {
     expect(
       await screen.findByText('Noch keine bestätigten Belege in diesem Zeitraum'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Beleg hochladen' })).toHaveAttribute(
-      'href',
-      '/receipts',
-    )
+    expect(screen.getByRole('button', { name: 'Beleg hochladen' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Beispielbeleg ausprobieren' })).toBeInTheDocument()
   })
 
   it('shows an error state with retry', async () => {

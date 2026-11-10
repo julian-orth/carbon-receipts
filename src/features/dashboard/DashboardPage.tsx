@@ -1,6 +1,4 @@
-import { Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,6 +7,8 @@ import { formatCo2e } from '@/lib/format-co2'
 import { cn } from '@/lib/utils'
 import { AlternativesList } from './components/AlternativesList'
 import { useReceipts, useReceiptTotals } from '@/features/receipts/queries'
+import { SampleReceiptButton } from '@/features/receipts/upload/SampleReceiptButton'
+import { UploadButton } from '@/features/receipts/upload/UploadButton'
 import { DashboardCard } from './components/DashboardCard'
 import { GroupBreakdownChart } from './components/GroupBreakdownChart'
 import { HeroCard } from './components/HeroCard'
@@ -153,21 +153,26 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
       <div className="space-y-6">
         {header}
         {open.length > 0 && (
-          <NextStepCard openCount={open.length} firstOpenId={open[0]?.id ?? null} />
+          <NextStepCard
+            openCount={open.length}
+            firstOpenId={open[0]?.id ?? null}
+            showUpload={false}
+          />
         )}
-        <RangeSection range={range} onChange={setRange} />
+        {/* Nothing in any range: nothing to switch between. */}
+        {fullSeries.some((point) => point.totalKg > 0) && (
+          <RangeSection range={range} onChange={setRange} />
+        )}
         <div className="flex flex-col items-center gap-3 rounded-3xl border bg-card px-6 py-14 text-center">
           <p className="text-lg font-medium">Noch keine bestätigten Belege in diesem Zeitraum</p>
           <p className="max-w-md text-muted-foreground">
             Lade ein Foto deines Kassenbons hoch und bestätige die erkannten Positionen – dann
             erscheinen hier Verlauf, Hotspots und Sparpotenzial.
           </p>
-          <Button asChild>
-            <Link to="/receipts">
-              <Upload aria-hidden />
-              Beleg hochladen
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <UploadButton className="h-11 px-5" />
+            <SampleReceiptButton />
+          </div>
         </div>
       </div>
     )
