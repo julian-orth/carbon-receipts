@@ -29,8 +29,8 @@ export function AlternativesList({
             key={`${s.fromLabel}-${s.toLabel}`}
             className="flex flex-col gap-2.5 rounded-2xl border p-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+              <p className="flex min-w-0 flex-[1_1_14rem] flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
                 <span className="inline-flex min-w-0 items-center gap-2">
                   <CategoryTile category={categoriesBySlug.get(s.fromSlug)} size="sm" />
                   {s.fromLabel}

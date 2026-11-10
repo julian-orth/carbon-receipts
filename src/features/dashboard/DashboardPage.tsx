@@ -182,7 +182,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
     <div className="space-y-5 sm:space-y-6">
       {header}
 
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12 [&>*]:min-w-0">
         <div className="flex lg:col-span-8 [&>*]:flex-1">
           <HeroCard
             monthLabel={monthName.format(today)}
@@ -200,7 +200,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
 
       <RangeSection range={range} onChange={setRange} />
 
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-12 [&>*]:min-w-0">
         <DashboardCard
           title="Verlauf"
           description="CO₂e pro Monat aus bestätigten Belegen"
