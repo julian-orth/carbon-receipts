@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase'
-import type { GroupRow, HotspotRow, MonthlyTotalRow } from './dashboard-logic'
+import type {
+  CoverageRow,
+  GroupRow,
+  HotspotRow,
+  MonthlyTotalRow,
+  UncoveredRow,
+} from './dashboard-logic'
 
 // Aggregation happens in SQL views (security_invoker → RLS applies).
 
@@ -28,6 +34,27 @@ export async function fetchHotspots(fromMonth: string, limit = 20): Promise<Hots
     .select('id, raw_text, quantity, unit, co2e_kg, category_slug, category_label, purchased_on')
     .gte('month', fromMonth)
     .order('co2e_kg', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data
+}
+
+export async function fetchMonthlyCoverage(fromMonth: string): Promise<CoverageRow[]> {
+  const { data, error } = await supabase
+    .from('monthly_coverage')
+    .select('month, item_count, counted_count')
+    .gte('month', fromMonth)
+  if (error) throw error
+  return data
+}
+
+/** Items without a CO2e value, newest first; enough to name a few examples per range. */
+export async function fetchUncoveredItems(fromMonth: string, limit = 100): Promise<UncoveredRow[]> {
+  const { data, error } = await supabase
+    .from('uncovered_items')
+    .select('id, raw_text, month')
+    .gte('month', fromMonth)
+    .order('purchased_on', { ascending: false })
     .limit(limit)
   if (error) throw error
   return data

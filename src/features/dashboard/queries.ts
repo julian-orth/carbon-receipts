@@ -2,8 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   fetchGroupTotals,
   fetchHotspots,
+  fetchMonthlyCoverage,
   fetchMonthlyGoal,
   fetchMonthlyTotals,
+  fetchUncoveredItems,
   saveMonthlyGoal,
 } from './api'
 import { dashboardKeys } from './query-keys'
@@ -28,6 +30,20 @@ export function useHotspots(fromMonth: string) {
     queryFn: () => fetchHotspots(fromMonth),
     // Switching the range keeps the old list on screen until the new one arrives.
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useMonthlyCoverage(fromMonth: string) {
+  return useQuery({
+    queryKey: dashboardKeys.coverage(fromMonth),
+    queryFn: () => fetchMonthlyCoverage(fromMonth),
+  })
+}
+
+export function useUncoveredItems(fromMonth: string) {
+  return useQuery({
+    queryKey: dashboardKeys.uncovered(fromMonth),
+    queryFn: () => fetchUncoveredItems(fromMonth),
   })
 }
 

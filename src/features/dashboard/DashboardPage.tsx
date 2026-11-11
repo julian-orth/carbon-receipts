@@ -6,6 +6,7 @@ import { useEmissionCategories } from '@/features/categories/categories'
 import { formatCo2e } from '@/lib/format-co2'
 import { cn } from '@/lib/utils'
 import { AlternativesList } from './components/AlternativesList'
+import { CoverageNote } from './components/CoverageNote'
 import { useReceipts, useReceiptTotals } from '@/features/receipts/queries'
 import { SampleReceiptButton } from '@/features/receipts/upload/SampleReceiptButton'
 import { UploadButton } from '@/features/receipts/upload/UploadButton'
@@ -23,14 +24,23 @@ import {
   MAX_RANGE_MONTHS,
   buildMonthSeries,
   compareCompletedMonths,
+  coverageSince,
   lastMonths,
   projectMonth,
   type RangeMonths,
   receiptStats,
   sumByGroup,
   suggestAlternatives,
+  uncoveredExamples,
 } from './dashboard-logic'
-import { useGroupTotals, useHotspots, useMonthlyGoal, useMonthlyTotals } from './queries'
+import {
+  useGroupTotals,
+  useHotspots,
+  useMonthlyCoverage,
+  useMonthlyGoal,
+  useMonthlyTotals,
+  useUncoveredItems,
+} from './queries'
 
 const stale = 'transition-opacity duration-200'
 
@@ -70,6 +80,8 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const totals = useMonthlyTotals(dataFromMonth)
   const groups = useGroupTotals(dataFromMonth)
   const hotspots = useHotspots(fromMonth)
+  const coverageRows = useMonthlyCoverage(dataFromMonth)
+  const uncovered = useUncoveredItems(dataFromMonth)
   const goal = useMonthlyGoal()
   const categories = useEmissionCategories()
   const receipts = useReceipts()
@@ -84,7 +96,17 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
     [totals.data, today],
   )
   const series = useMemo(() => fullSeries.slice(-range), [fullSeries, range])
-  const queries = [totals, groups, hotspots, goal, categories, receipts, totalsByReceipt]
+  const queries = [
+    totals,
+    groups,
+    hotspots,
+    coverageRows,
+    uncovered,
+    goal,
+    categories,
+    receipts,
+    totalsByReceipt,
+  ]
 
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
@@ -143,6 +165,8 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
   const groupTotals = sumByGroup(groups.data ?? [], fromMonth)
   const alternatives = suggestAlternatives(hotspots.data ?? [], categories.data ?? [])
   const topHotspots = (hotspots.data ?? []).slice(0, 5)
+  const coverage = coverageSince(coverageRows.data ?? [], fromMonth)
+  const examples = uncoveredExamples(uncovered.data ?? [], fromMonth)
   const goalKg = goal.data ? goal.data.target_co2e_kg : null
   const stats = receiptStats(receipts.data ?? [], totalsByReceipt.data ?? new Map(), fromMonth)
   const open = (receipts.data ?? []).filter((receipt) => receipt.status === 'review')
@@ -218,6 +242,7 @@ export function DashboardPage({ today: todayProp }: { today?: Date }) {
         </DashboardCard>
         <div className="flex flex-col gap-5 sm:gap-6 lg:col-span-4">
           <RangeStats range={range} totalKg={rangeTotal} stats={stats} />
+          <CoverageNote coverage={coverage} examples={examples} />
           <DashboardCard
             title="Nach Bereich"
             description={`Letzte ${range} Monate`}

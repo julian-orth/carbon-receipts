@@ -3,6 +3,7 @@ import {
   averageCompletedMonth,
   buildMonthSeries,
   compareCompletedMonths,
+  coverageSince,
   type FactorRef,
   goalProgress,
   type HotspotRow,
@@ -11,6 +12,7 @@ import {
   receiptStats,
   sumByGroup,
   suggestAlternatives,
+  uncoveredExamples,
 } from './dashboard-logic'
 
 const today = new Date(2026, 10, 7) // 7 Nov 2026
@@ -277,5 +279,50 @@ describe('suggestAlternatives', () => {
       factors,
     )
     expect(suggestion).toMatchObject({ savingPerUnit: 1.1, savingKg: null })
+  })
+})
+
+describe('coverageSince', () => {
+  const rows = [
+    { month: '2026-08-01', item_count: 10, counted_count: 2 },
+    { month: '2026-10-01', item_count: 20, counted_count: 18 },
+    { month: '2026-11-01', item_count: 22, counted_count: 19 },
+    { month: null, item_count: 5, counted_count: 5 },
+  ]
+
+  it('counts items from the first month on and reports the gap', () => {
+    expect(coverageSince(rows, '2026-10-01')).toEqual({
+      items: 42,
+      counted: 37,
+      missing: 5,
+      ratio: 37 / 42,
+    })
+  })
+
+  it('has no ratio without items', () => {
+    expect(coverageSince(rows, '2027-01-01')).toEqual({
+      items: 0,
+      counted: 0,
+      missing: 0,
+      ratio: null,
+    })
+  })
+})
+
+describe('uncoveredExamples', () => {
+  const rows = [
+    { id: '1', raw_text: 'Duschgel', month: '2026-11-01' },
+    { id: '2', raw_text: 'Spülmittel', month: '2026-11-01' },
+    { id: '3', raw_text: 'duschgel ', month: '2026-10-01' },
+    { id: '4', raw_text: 'Altes', month: '2026-01-01' },
+    { id: '5', raw_text: '  ', month: '2026-11-01' },
+  ]
+
+  it('lists distinct texts, most frequent first, within the range', () => {
+    expect(uncoveredExamples(rows, '2026-10-01')).toEqual(['Duschgel', 'Spülmittel'])
+  })
+
+  it('respects the limit', () => {
+    expect(uncoveredExamples(rows, '2026-10-01', 1)).toEqual(['Duschgel'])
   })
 })

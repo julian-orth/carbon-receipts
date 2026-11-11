@@ -262,3 +262,54 @@ export function suggestAlternatives(
     .toSorted((a, b) => (b.savingKg ?? b.savingPerUnit) - (a.savingKg ?? a.savingPerUnit))
     .slice(0, limit)
 }
+
+export type CoverageRow = {
+  month: string | null
+  item_count: number | null
+  counted_count: number | null
+}
+export type UncoveredRow = { id: string | null; raw_text: string | null; month: string | null }
+
+export type Coverage = {
+  items: number
+  counted: number
+  missing: number
+  /** Share of items with a CO2e value; null without any item. */
+  ratio: number | null
+}
+
+/** How many of the confirmed items from `fromMonth` on got a CO2e value. */
+export function coverageSince(rows: readonly CoverageRow[], fromMonth: string): Coverage {
+  let items = 0
+  let counted = 0
+  for (const row of rows) {
+    if (!row.month || row.month < fromMonth) continue
+    items += row.item_count ?? 0
+    counted += row.counted_count ?? 0
+  }
+  return { items, counted, missing: items - counted, ratio: items > 0 ? counted / items : null }
+}
+
+/**
+ * Distinct examples of items without a value (same text, any case, counts once), most
+ * frequent first, then in order of appearance.
+ */
+export function uncoveredExamples(
+  rows: readonly UncoveredRow[],
+  fromMonth: string,
+  limit = 5,
+): string[] {
+  const counts = new Map<string, { text: string; count: number }>()
+  for (const row of rows) {
+    const text = row.raw_text?.trim()
+    if (!text || !row.month || row.month < fromMonth) continue
+    const key = text.toLocaleLowerCase('de')
+    const entry = counts.get(key)
+    if (entry) entry.count++
+    else counts.set(key, { text, count: 1 })
+  }
+  return [...counts.values()]
+    .toSorted((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map((entry) => entry.text)
+}

@@ -67,6 +67,14 @@ describe('DashboardPage', () => {
         purchased_on: '2026-11-02',
       },
     ])
+    mockedApi.fetchMonthlyCoverage.mockResolvedValue([
+      { month: '2026-10-01', item_count: 6, counted_count: 5 },
+      { month: '2026-11-01', item_count: 4, counted_count: 3 },
+    ])
+    mockedApi.fetchUncoveredItems.mockResolvedValue([
+      { id: 'u1', raw_text: 'Duschgel', month: '2026-11-01' },
+      { id: 'u2', raw_text: 'Spülmittel', month: '2026-10-01' },
+    ])
     mockedApi.fetchMonthlyGoal.mockResolvedValue({ id: 'g1', target_co2e_kg: 50 })
     mockedApi.saveMonthlyGoal.mockResolvedValue()
     vi.mocked(receiptsApi.fetchReceipts).mockResolvedValue([
@@ -125,6 +133,18 @@ describe('DashboardPage', () => {
     expect(
       within(alternatives).getByRole('link', { name: 'ifeu veggie-patty' }),
     ).toBeInTheDocument()
+  })
+
+  it('states how many items are covered and names examples of the rest', async () => {
+    renderDashboard()
+    const coverage = await screen.findByRole('region', { name: 'Abdeckung' })
+    expect(coverage).toHaveTextContent('8 von 10 Positionen sind berechnet (80 %)')
+    expect(coverage).toHaveTextContent('2 Positionen haben keinen Wert')
+    expect(coverage).toHaveTextContent('zum Beispiel Duschgel, Spülmittel')
+    expect(within(coverage).getByRole('link', { name: 'Datenbasis' })).toHaveAttribute(
+      'href',
+      '/datenbasis',
+    )
   })
 
   it('shows goal progress with a text status, not just colour', async () => {
