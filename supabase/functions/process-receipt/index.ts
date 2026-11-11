@@ -13,6 +13,7 @@ import { bytesToBase64 } from '../_shared/encoding.ts'
 import { createGeminiProvider } from '../_shared/llm/gemini.ts'
 import { createGroqProvider } from '../_shared/llm/groq.ts'
 import { createMockProvider } from '../_shared/llm/mock.ts'
+import { quotaExhaustedMessage } from '../_shared/llm/quota.ts'
 import { AllProvidersFailedError, generateWithFallback } from '../_shared/llm/resilient.ts'
 import type { LlmProvider } from '../_shared/llm/types.ts'
 import {
@@ -69,7 +70,10 @@ function requireEnv(name: string): string {
   return value
 }
 
-/** `LLM_PROVIDERS` defines the order, e.g. "gemini,groq" (default) or "mock". */
+/**
+ * `LLM_PROVIDERS` defines the order, e.g. "gemini,groq" (default). "mock" is a test double for
+ * E2E only and refuses to load unless `ENVIRONMENT=test` – production never fakes an analysis.
+ */
 function createProviders(): LlmProvider[] {
   const names = (Deno.env.get('LLM_PROVIDERS') ?? 'gemini,groq')
     .split(',')
@@ -77,7 +81,13 @@ function createProviders(): LlmProvider[] {
     .filter(Boolean)
 
   return names.flatMap((name): LlmProvider[] => {
-    if (name === 'mock') return [createMockProvider()]
+    if (name === 'mock') {
+      if (Deno.env.get('ENVIRONMENT') !== 'test') {
+        console.error('The mock provider only runs with ENVIRONMENT=test – ignored')
+        return []
+      }
+      return [createMockProvider()]
+    }
     if (name === 'gemini') {
       const apiKey = Deno.env.get('GEMINI_API_KEY')
       if (!apiKey) return []
@@ -119,6 +129,12 @@ async function reportProgress(
   if (error) console.warn('Could not report progress', error.message)
 }
 
+/** All providers are out of quota: the user hears when the first one is back. */
+function quotaUsedUp(exhaustedUntil: Map<string, Date>): UserFacingError {
+  const earliest = new Date(Math.min(...[...exhaustedUntil.values()].map((d) => d.getTime())))
+  return new UserFacingError(quotaExhaustedMessage(earliest), 'quota')
+}
+
 function describeError(error: unknown): { message: string; code: FailureCode } {
   if (error instanceof UserFacingError) return { message: error.message, code: error.code }
   if (error instanceof AllProvidersFailedError) {
@@ -137,9 +153,21 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
     if (!receipt.file_path)
       throw new UserFacingError('Zu diesem Beleg gibt es keine Datei.', 'no_file')
 
-    const providers = createProviders()
-    if (providers.length === 0)
+    const configured = createProviders()
+    if (configured.length === 0)
       throw new Error('No LLM provider configured (LLM_PROVIDERS / API keys)')
+
+    // Circuit breaker: skip providers whose quota is known to be used up.
+    const states = await admin
+      .from('ai_provider_state')
+      .select('provider, exhausted_until')
+      .gt('exhausted_until', new Date().toISOString())
+    if (states.error) throw states.error
+    const exhaustedUntil = new Map(
+      states.data.map((row) => [row.provider, new Date(row.exhausted_until)]),
+    )
+    const providers = configured.filter((provider) => !exhaustedUntil.has(provider.name))
+    if (providers.length === 0) throw quotaUsedUp(exhaustedUntil)
 
     const [categories, file] = await Promise.all([
       admin.from('emission_categories').select('id, slug, label, unit, co2e_per_unit'),
@@ -168,6 +196,22 @@ async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<vo
       attempts,
     } = await generateWithFallback(providers, request, parseReceiptExtraction, undefined, {
       onProviderStart: (name) => reportProgress(admin, receipt.id, { ai_provider: name }),
+      onExhausted: async (name, until) => {
+        exhaustedUntil.set(name, until)
+        console.warn(JSON.stringify({ event: 'llm_exhausted', provider: name, until }))
+        const { error } = await admin
+          .from('ai_provider_state')
+          .upsert({ provider: name, exhausted_until: until.toISOString() })
+        if (error) console.warn('Could not store provider state', error.message)
+      },
+    }).catch((error: unknown) => {
+      // Every provider ran dry during this request: say so, instead of "unreachable".
+      if (
+        error instanceof AllProvidersFailedError &&
+        configured.every((p) => exhaustedUntil.has(p.name))
+      )
+        throw quotaUsedUp(exhaustedUntil)
+      throw error
     })
     if (attempts.length > 0) {
       // A fallback that works is invisible to the user – keep it visible in the logs.

@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 insert into auth.users (id, email) values ('33333333-3333-3333-3333-333333333333', 'quota@example.com');
 update public.profiles set daily_ai_quota = 2 where id = '33333333-3333-3333-3333-333333333333';
@@ -24,6 +24,13 @@ select throws_ok(
   $$ select public.consume_ai_quota('33333333-3333-3333-3333-333333333333') $$,
   '42501', null,
   'users cannot consume quota themselves'
+);
+
+select is(
+  (select column_default from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'daily_ai_quota'),
+  '5',
+  'new profiles get 5 analyses per day'
 );
 
 select * from finish();

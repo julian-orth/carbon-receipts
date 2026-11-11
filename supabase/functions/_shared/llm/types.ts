@@ -10,6 +10,11 @@ export type LlmRequest = {
 export interface LlmProvider {
   readonly name: string
   generateJson(request: LlmRequest, signal?: AbortSignal): Promise<unknown>
+  /**
+   * Set when the provider reported (e.g. via rate-limit headers) that its quota is used up
+   * after a successful call, so the next request can skip it instead of running into a 429.
+   */
+  quotaExhaustedUntil?(): Date | undefined
 }
 
 export class LlmError extends Error {
@@ -17,16 +22,19 @@ export class LlmError extends Error {
   readonly status: number | undefined
   /** 429 and 5xx: worth retrying the same provider after a delay. */
   readonly retryable: boolean
+  /** The quota is used up until then (daily limits): do not retry, skip the provider meanwhile. */
+  readonly exhaustedUntil: Date | undefined
 
   constructor(
     message: string,
-    options: { provider: string; status?: number; retryable?: boolean },
+    options: { provider: string; status?: number; retryable?: boolean; exhaustedUntil?: Date },
   ) {
     super(message)
     this.name = 'LlmError'
     this.provider = options.provider
     this.status = options.status
     this.retryable = options.retryable ?? false
+    this.exhaustedUntil = options.exhaustedUntil
   }
 }
 
@@ -49,6 +57,9 @@ export function parseModelJson(text: string, provider: string): unknown {
     throw new LlmError('Model returned invalid JSON', { provider })
   }
 }
+
+/** Output cap per request: receipts are small, a runaway answer must not eat the token quota. */
+export const MAX_OUTPUT_TOKENS = 4096
 
 /** Per-request limit. Edge functions have a wall-clock budget, so a hanging model must not eat it. */
 export const DEFAULT_TIMEOUT_MS = 30_000

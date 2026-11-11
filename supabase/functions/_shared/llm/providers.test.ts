@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { createGeminiProvider } from './gemini.ts'
 import { createGroqProvider } from './groq.ts'
 import { fetchWithTimeout, LlmError, parseModelJson } from './types.ts'
@@ -143,5 +143,70 @@ describe('fetchWithTimeout', () => {
       timeoutMs: 20,
     })
     await expect(gemini.generateJson(request)).rejects.toThrow(/timed out after 20 ms/)
+  })
+})
+
+describe('quota signals', () => {
+  it('treats a Gemini 429 that names a daily quota as exhausted until midnight Pacific', async () => {
+    const fetchMock = fakeFetch(429, {
+      error: { message: 'Quota exceeded for metric GenerateRequestsPerDayPerProjectPerModel' },
+    })
+    const gemini = createGeminiProvider({ apiKey: 'k', model: 'm', fetch: fetchMock })
+    const error = await gemini.generateJson(request).catch((e: unknown) => e)
+    assert(error instanceof LlmError)
+    expect(error).toMatchObject({ status: 429, retryable: false })
+    expect(error.exhaustedUntil?.getTime()).toBeGreaterThan(Date.now())
+  })
+
+  it('keeps a per-minute Gemini 429 retryable', async () => {
+    const fetchMock = fakeFetch(429, { error: { message: 'PerMinute limit' } })
+    const gemini = createGeminiProvider({ apiKey: 'k', model: 'm', fetch: fetchMock })
+    await expect(gemini.generateJson(request)).rejects.toMatchObject({
+      retryable: true,
+      exhaustedUntil: undefined,
+    })
+  })
+
+  it('treats a long Groq retry-after as a daily limit', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response('{}', { status: 429, headers: { 'retry-after': '3600' } })),
+    )
+    const groq = createGroqProvider({ apiKey: 'k', model: 'm', fetch: fetchMock })
+    const error = await groq.generateJson(request).catch((e: unknown) => e)
+    assert(error instanceof LlmError)
+    expect(error).toMatchObject({ retryable: false })
+    expect(error.exhaustedUntil?.getTime()).toBeGreaterThan(Date.now() + 3_000_000)
+  })
+
+  it('keeps a short Groq retry-after retryable', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response('{}', { status: 429, headers: { 'retry-after': '8' } })),
+    )
+    const groq = createGroqProvider({ apiKey: 'k', model: 'm', fetch: fetchMock })
+    await expect(groq.generateJson(request)).rejects.toMatchObject({ retryable: true })
+  })
+
+  it('remembers when Groq says the last daily request was just used', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ choices: [{ message: { content: '{"a":1}' } }] }), {
+          status: 200,
+          headers: {
+            'x-ratelimit-remaining-requests': '0',
+            'x-ratelimit-reset-requests': '12m0s',
+          },
+        }),
+      ),
+    )
+    const groq = createGroqProvider({ apiKey: 'k', model: 'm', fetch: fetchMock })
+    expect(groq.quotaExhaustedUntil?.()).toBeUndefined()
+    await groq.generateJson(request)
+    expect(groq.quotaExhaustedUntil?.()?.getTime()).toBeGreaterThan(Date.now() + 600_000)
+  })
+
+  it('caps the output tokens', async () => {
+    const fetchMock = fakeFetch(200, { choices: [{ message: { content: '{}' } }] })
+    await createGroqProvider({ apiKey: 'k', model: 'm', fetch: fetchMock }).generateJson(request)
+    expect(sentBody(fetchMock)).toMatchObject({ max_tokens: 4096 })
   })
 })

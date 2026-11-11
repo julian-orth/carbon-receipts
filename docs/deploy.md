@@ -24,8 +24,9 @@ Vercel (frontend), Google AI Studio (Gemini) and Groq.
 
    ```bash
    supabase secrets set LLM_PROVIDERS=gemini,groq GEMINI_API_KEY=... GROQ_API_KEY=...
-   # optional, model names rotate on the free tiers:
-   # supabase secrets set GEMINI_MODEL=gemini-3.8-flash GROQ_MODEL=qwen/qwen3.8-27b
+   # optional, model names rotate on the free tiers. Gemini's daily limit is per model
+   # (20/day each, Nov 2026), so list several – they are tried in order:
+   # supabase secrets set GEMINI_MODEL=gemini-3.6-flash,gemini-3.8-flash GROQ_MODEL=qwen/qwen3.8-27b
    ```
 
 3. Tell the account-deletion function which account is the shared demo (it refuses that one):

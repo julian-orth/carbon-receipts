@@ -30,6 +30,7 @@ describe('UserMenu', () => {
       daily_ai_quota: 20,
       created_at: '2026-01-01T00:00:00Z',
     })
+    vi.mocked(accountApi.fetchAiUsageToday).mockResolvedValue(3)
     signOut.mockResolvedValue({ error: null })
   })
 
@@ -68,6 +69,35 @@ describe('UserMenu', () => {
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
     localStorage.removeItem('theme')
     document.documentElement.classList.remove('dark')
+  })
+
+  it('shows the remaining AI analyses in the header and links to the account', async () => {
+    renderApp()
+    const nav = await screen.findByRole('navigation', { name: 'Hauptnavigation' })
+    const badge = await within(nav).findByRole('link', {
+      name: 'Noch 17 von 20 KI-Analysen heute. Zum Konto.',
+    })
+    expect(badge).toHaveAttribute('href', '/konto')
+    expect(badge).toHaveTextContent('17/20')
+  })
+
+  it('says so when the daily limit is reached', async () => {
+    vi.mocked(accountApi.fetchAiUsageToday).mockResolvedValue(20)
+    renderApp()
+    const nav = await screen.findByRole('navigation', { name: 'Hauptnavigation' })
+    expect(
+      await within(nav).findByRole('link', {
+        name: 'Tageslimit erreicht: 20 von 20 KI-Analysen genutzt. Zum Konto.',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the badge when the usage cannot be read', async () => {
+    vi.mocked(accountApi.fetchAiUsageToday).mockRejectedValue(new Error('offline'))
+    renderApp()
+    const nav = await screen.findByRole('navigation', { name: 'Hauptnavigation' })
+    await within(nav).findByRole('button', { name: /Konto-Menü/ })
+    expect(within(nav).queryByRole('link', { name: /KI-Analysen/ })).not.toBeInTheDocument()
   })
 
   it('signs out', async () => {

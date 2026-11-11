@@ -7,8 +7,10 @@ import {
   LlmError,
   type LlmProvider,
   type LlmRequest,
+  MAX_OUTPUT_TOKENS,
   parseModelJson,
 } from './types.ts'
+import { nextMidnight } from './quota.ts'
 
 const geminiResponseSchema = z.object({
   candidates: z
@@ -52,17 +54,28 @@ export function createGeminiProvider(options: {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: request.system }] },
             contents: [{ role: 'user', parts }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0,
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+            },
           }),
         },
         { provider: name, timeoutMs, signal },
       )
 
       if (!response.ok) {
+        // Gemini names the exceeded quota in the 429 body ("…PerDay…"): a daily quota only
+        // resets at midnight Pacific time, so retrying (or trying again today) is pointless.
+        const dailyExhausted =
+          response.status === 429 && /PerDay/i.test(await response.text().catch(() => ''))
         throw new LlmError(`Gemini request failed with ${response.status}`, {
           provider: name,
           status: response.status,
-          retryable: isRetryableStatus(response.status),
+          retryable: !dailyExhausted && isRetryableStatus(response.status),
+          ...(dailyExhausted && {
+            exhaustedUntil: nextMidnight(new Date(), 'America/Los_Angeles'),
+          }),
         })
       }
 

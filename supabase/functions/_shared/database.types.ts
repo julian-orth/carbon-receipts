@@ -3,6 +3,24 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      ai_provider_state: {
+        Row: {
+          exhausted_until: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          exhausted_until: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          exhausted_until?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           request_count: number

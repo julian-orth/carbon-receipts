@@ -140,3 +140,33 @@ describe('backoffDelay', () => {
     ])
   })
 })
+
+describe('circuit breaker', () => {
+  it('reports an exhausted provider and moves on without retrying it', async () => {
+    const until = new Date('2026-11-12T08:00:00Z')
+    const gemini = provider(
+      'gemini',
+      new LlmError('429', { provider: 'gemini', status: 429, exhaustedUntil: until }),
+    )
+    const groq = provider('groq', { ok: 1 })
+    const onExhausted = vi.fn<(name: string, until: Date) => void>()
+
+    const result = await generateWithFallback([gemini, groq], request, identity, noWait, {
+      onExhausted,
+    })
+
+    expect(result.provider).toBe('groq')
+    expect(gemini.calls).toBe(1)
+    expect(onExhausted).toHaveBeenCalledWith('gemini', until)
+  })
+
+  it('reports a provider that used its last request on a successful call', async () => {
+    const until = new Date('2026-11-12T08:00:00Z')
+    const groq = { ...provider('groq', { ok: 1 }), quotaExhaustedUntil: () => until }
+    const onExhausted = vi.fn<(name: string, until: Date) => void>()
+
+    await generateWithFallback([groq], request, identity, noWait, { onExhausted })
+
+    expect(onExhausted).toHaveBeenCalledWith('groq', until)
+  })
+})

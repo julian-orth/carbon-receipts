@@ -26,7 +26,7 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
 - **Photo upload** to private storage, processed by an edge function in the background; the list
   follows the status live via Realtime
 - **LLM pipeline** with Gemini Flash, Groq as fallback, exponential backoff, Zod validation of
-  every response, a daily quota per user and a deterministic mock provider for local work and E2E
+  every response, a daily quota per user, a circuit breaker for used-up free-tier quotas and a test-only mock provider for E2E
 - **Missing amounts handled**: real receipts rarely print pack sizes, so the model may suggest a
   typical one – stored as `estimated` and flagged, never silently trusted
 - **Failures that help**: the model also reports what it sees (not a receipt, unreadable, cut off,
@@ -144,7 +144,7 @@ Requirements: Node 24, Docker (for local Supabase).
 npm install
 npm run db:start                    # local Supabase incl. demo data
 cp .env.example .env.local          # fill in PUBLISHABLE_KEY from `supabase status`
-cp supabase/functions/.env.example supabase/functions/.env   # LLM_PROVIDERS=mock needs no keys
+cp supabase/functions/.env.example supabase/functions/.env   # add GEMINI_API_KEY / GROQ_API_KEY (free tiers)
 npm run functions:serve             # second terminal
 npm run dev
 ```

@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router'
 import { BrandMark } from '@/components/BrandMark'
+import { AiQuotaBadge } from '@/features/account/components/AiQuotaBadge'
 import { useAuth } from '@/features/auth/auth-context'
 import { UserMenu } from '@/features/auth/UserMenu'
 import { UploadFlowProvider } from '@/features/receipts/upload/UploadFlowProvider'
@@ -40,7 +41,12 @@ export function RootLayout() {
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
               {/* Signed in, the theme lives in the account menu. */}
               {auth.status === 'unauthenticated' && <ThemeToggle />}
-              <UploadButton compact />
+              {auth.status === 'authenticated' && <AiQuotaBadge />}
+              {/* Inverted (not the brand green) so it does not blend into the avatar next to it. */}
+              <UploadButton
+                compact
+                className="bg-foreground text-background hover:bg-foreground/85"
+              />
               <UserMenu />
             </div>
           </nav>

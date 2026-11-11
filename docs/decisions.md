@@ -469,3 +469,28 @@ products get no value and silently dropped out of the sums before. `monthly_cove
 confirmed lines with and without a value; `uncovered_items` gives a few examples. Both are loaded
 for 12 months and sliced client-side like the other monthly figures, so switching the range does
 not refetch.
+
+## 026 – No mock in production, circuit breaker for free-tier quotas
+
+**No fake analyses.** The mock provider loads only with `ENVIRONMENT=test` (E2E/CI); anywhere else
+it is ignored with an error. A demo either runs a real analysis or says the quota is used up.
+
+**Circuit breaker.** The providers' free-tier numbers are not reliable (Google no longer pins them
+on its docs page, third-party sources disagree), so no limit is hard-coded. Instead the providers'
+own signals decide: Gemini's 429 body naming a `PerDay` quota (resets midnight Pacific), Groq's
+`retry-after` above 60 s, and Groq's `x-ratelimit-remaining-requests: 0` after a successful call.
+The edge function stores `ai_provider_state.exhausted_until` and skips that provider until then, so
+a used-up quota is not hammered; if every provider is out, the user is told when it works again
+(`quota` failure) and no per-user quota is consumed. A 429 on the free tier costs nothing, so no
+safety margin below 100 % is needed. Output is capped (`MAX_OUTPUT_TOKENS` = 4096).
+
+**Measured free-tier limits (consoles, 2026-11-11).** Gemini 3.6 and 3.8 Flash: 5 requests/min,
+250K tokens/min, **20 requests/day each** (per model). Groq `qwen/qwen3.8-27b`: 30 requests/min,
+1K requests/day, **8K tokens/min, 200K tokens/day**. The binding limits are Gemini's 20/day and
+Groq's tokens, not its request count; a receipt costs a few thousand tokens, so the output cap
+must stay well below Groq's 8K per minute.
+
+**Not done.** Token usage is not logged or counted, and `profiles.daily_ai_quota` is a
+per-user guard, not a derived number: 5 per day (was 20), because the measured free tiers allow
+roughly 50–80 analyses per day in total. Gemini sends no remaining-quota header (as far as
+known), so its exhaustion is only noticed on the first 429.

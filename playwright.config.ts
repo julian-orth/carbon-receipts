@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 /**
  * E2E against the local stack:
- *   npm run db:start && npm run functions:serve   (LLM_PROVIDERS=mock)
+ *   npm run db:start && npm run functions:serve   (LLM_PROVIDERS=mock, ENVIRONMENT=test)
  *   npm run test:e2e
  */
 export default defineConfig({

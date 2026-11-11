@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteAccount,
@@ -19,6 +20,15 @@ export function useProfile() {
 
 export function useAiUsageToday() {
   return useQuery({ queryKey: accountKeys.usage(), queryFn: fetchAiUsageToday })
+}
+
+/** Marks today's usage stale, e.g. after an analysis started (it consumes the quota). */
+export function useRefreshAiUsage() {
+  const queryClient = useQueryClient()
+  return useCallback(
+    () => void queryClient.invalidateQueries({ queryKey: accountKeys.usage() }),
+    [queryClient],
+  )
 }
 
 export function useUpdateDisplayName(userId: string) {

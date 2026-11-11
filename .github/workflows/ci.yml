@@ -126,6 +126,7 @@ jobs:
           } > .env.local
           {
             echo "LLM_PROVIDERS=mock"
+            echo "ENVIRONMENT=test"
             echo "DEMO_EMAIL=demo@carbon-receipts.app"
           } > supabase/functions/.env
 
