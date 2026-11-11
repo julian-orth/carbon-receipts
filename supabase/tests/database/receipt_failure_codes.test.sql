@@ -7,8 +7,8 @@ insert into auth.users (id, email) values
   ('99999999-9999-9999-9999-999999999999', 'codes@example.com');
 
 insert into public.receipts (id, user_id, source_type, status, file_path) values
-  ('ffffffff-0000-0000-0000-000000000001', '99999999-9999-9999-9999-999999999999', 'photo', 'processing', 'a.jpg'),
-  ('ffffffff-0000-0000-0000-000000000002', '99999999-9999-9999-9999-999999999999', 'photo', 'processing', 'b.jpg');
+  ('ffffffff-0000-0000-0000-000000000001', '99999999-9999-9999-9999-999999999999', 'photo', 'processing', '99999999-9999-9999-9999-999999999999/a.jpg'),
+  ('ffffffff-0000-0000-0000-000000000002', '99999999-9999-9999-9999-999999999999', 'photo', 'processing', '99999999-9999-9999-9999-999999999999/b.jpg');
 
 -- ---------------------------------------------------------------------------
 -- Edge function (service_role): notes with a result, codes with a failure

@@ -494,3 +494,19 @@ must stay well below Groq's 8K per minute.
 per-user guard, not a derived number: 5 per day (was 20), because the measured free tiers allow
 roughly 50–80 analyses per day in total. Gemini sends no remaining-quota header (as far as
 known), so its exhaustion is only noticed on the first 429.
+
+## 036 – Security review: photo paths stay in the owner's folder, demo credentials are locked
+
+**Someone else's photo.** The client sets `receipts.file_path` on insert and `process-receipt`
+downloads it with the service role, which ignores Storage policies. A user could point a receipt at
+another user's photo and get its line items. Now a check constraint requires
+`<user_id>/<file name>` (no subfolders, no `.`/`..`), and the function checks the same with
+`isOwnFile` before downloading – the database for every writer, the function in case a row ever
+gets past it.
+
+**Demo lock.** The demo password is in the frontend bundle, so any visitor could change it (or the
+email) and lock everyone else out. `secure_password_change` does not help: a fresh sign-in counts as
+"recent". A `before update` trigger on `auth.users` rejects password, email and phone changes for
+accounts with `app_metadata.demo = true`; app_metadata is admin-only. An admin changes the password
+by clearing the flag in the same update. Auth answers the blocked request with a generic 500; the
+app has no password form, so no nicer message is needed.

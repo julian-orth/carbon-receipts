@@ -7,6 +7,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { isOwnFile } from '../_shared/account.ts'
 import type { Database } from '../_shared/database.types.ts'
 import { normalizeProductName } from '../_shared/emissions/normalize-name.ts'
 import { bytesToBase64 } from '../_shared/encoding.ts'
@@ -150,7 +151,7 @@ function describeError(error: unknown): { message: string; code: FailureCode } {
 async function processReceipt(admin: Admin, receipt: ClaimedReceipt): Promise<void> {
   const startedAt = Date.now()
   try {
-    if (!receipt.file_path)
+    if (!receipt.file_path || !isOwnFile(receipt.file_path, receipt.user_id))
       throw new UserFacingError('Zu diesem Beleg gibt es keine Datei.', 'no_file')
 
     const configured = createProviders()

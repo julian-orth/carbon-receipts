@@ -8,9 +8,9 @@ insert into auth.users (id, email) values
   ('88888888-8888-8888-8888-888888888888', 'other@example.com');
 
 insert into public.receipts (id, user_id, source_type, status, file_path) values
-  ('eeeeeeee-0000-0000-0000-000000000001', '77777777-7777-7777-7777-777777777777', 'photo', 'pending', 'a.jpg'),
-  ('eeeeeeee-0000-0000-0000-000000000002', '77777777-7777-7777-7777-777777777777', 'photo', 'processing', 'b.jpg'),
-  ('eeeeeeee-0000-0000-0000-000000000003', '77777777-7777-7777-7777-777777777777', 'photo', 'processing', 'c.jpg');
+  ('eeeeeeee-0000-0000-0000-000000000001', '77777777-7777-7777-7777-777777777777', 'photo', 'pending', '77777777-7777-7777-7777-777777777777/a.jpg'),
+  ('eeeeeeee-0000-0000-0000-000000000002', '77777777-7777-7777-7777-777777777777', 'photo', 'processing', '77777777-7777-7777-7777-777777777777/b.jpg'),
+  ('eeeeeeee-0000-0000-0000-000000000003', '77777777-7777-7777-7777-777777777777', 'photo', 'processing', '77777777-7777-7777-7777-777777777777/c.jpg');
 
 -- receipt 3 has been processing for 10 minutes (crashed run)
 alter table public.receipts disable trigger receipts_set_updated_at;

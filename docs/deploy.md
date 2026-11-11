@@ -62,6 +62,12 @@ custom SMTP provider (e.g. Resend, free tier) under **Authentication → Emails 
 2. **SQL Editor**:
 
    ```sql
+   -- Lock the credentials: visitors know the password, so they must not be able to change it.
+   -- To change it yourself, set "demo" to false in the same update (decision 036).
+   update auth.users
+   set raw_app_meta_data = raw_app_meta_data || '{"demo": true}'
+   where email = 'demo@carbon-receipts.app';
+
    update public.profiles
    set daily_ai_quota = 5
    where id = (select id from auth.users where email = 'demo@carbon-receipts.app');
