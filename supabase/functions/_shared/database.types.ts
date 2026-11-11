@@ -362,6 +362,15 @@ export type Database = {
           },
         ]
       }
+      monthly_coverage: {
+        Row: {
+          counted_count: number | null
+          item_count: number | null
+          month: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       monthly_emissions: {
         Row: {
           category_group: string | null
@@ -400,6 +409,16 @@ export type Database = {
           },
         ]
       }
+      uncovered_items: {
+        Row: {
+          id: string | null
+          month: string | null
+          purchased_on: string | null
+          raw_text: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_receipt: {
@@ -421,12 +440,27 @@ export type Database = {
         Returns: undefined
       }
       consume_ai_quota: { Args: { p_user_id: string }; Returns: boolean }
+      create_manual_receipt: {
+        Args: { p_merchant?: string; p_purchased_at?: string }
+        Returns: string
+      }
+      find_duplicate_receipts: {
+        Args: { p_receipt_id: string }
+        Returns: {
+          id: string
+          item_count: number
+          merchant: string
+          purchased_at: string
+          status: Database['public']['Enums']['receipt_status']
+        }[]
+      }
+      start_manual_entry: { Args: { p_receipt_id: string }; Returns: undefined }
     }
     Enums: {
       emission_unit: 'kg' | 'l' | 'piece' | 'eur'
       goal_period: 'month' | 'year'
       processing_step: 'reading' | 'validating' | 'matching' | 'calculating'
-      receipt_source: 'photo' | 'pdf' | 'csv'
+      receipt_source: 'photo' | 'pdf' | 'csv' | 'manual'
       receipt_status: 'pending' | 'processing' | 'review' | 'done' | 'failed'
     }
     CompositeTypes: {
@@ -552,7 +586,7 @@ export const Constants = {
       emission_unit: ['kg', 'l', 'piece', 'eur'],
       goal_period: ['month', 'year'],
       processing_step: ['reading', 'validating', 'matching', 'calculating'],
-      receipt_source: ['photo', 'pdf', 'csv'],
+      receipt_source: ['photo', 'pdf', 'csv', 'manual'],
       receipt_status: ['pending', 'processing', 'review', 'done', 'failed'],
     },
   },
