@@ -445,3 +445,27 @@ Security look at what is new: the upload bucket enforces size and image types se
 only reach their own folder, `error_code`/`notes` are not writable by users (pgTAP), no secrets in
 the Git history, no `innerHTML`. CORS on the functions is `*`, which is fine because they are
 token-authenticated, not cookie-based.
+
+## 035 – Manual entry, duplicate warning and coverage
+
+**Manual entry.** Clients still cannot insert a `status`, so a receipt typed in by hand is created
+by `create_manual_receipt()` (security definer, always the caller's own row, `source_type =
+'manual'`, no file, straight to `review`). A failed photo receipt can be taken over with
+`start_manual_entry()` – only from `failed`, so a receipt in progress cannot be hijacked; the photo
+stays next to the form. Typed lines go through `buildNewItem`, which uses the same `computeCo2e` as
+the review, and carry a `normalized_name`, so they feed the learning loop like any other line. The
+form requires a category: a line without one would only add noise. Users may now insert
+`position` and `reviewed` on their own lines; both are harmless (they could already update them).
+
+**Duplicates.** A match is the same merchant (case and spaces ignored), the same day, the same
+number of lines and the same price sum. No photo hash: two photos of the same receipt never share
+bytes, and receipts are resized client-side. The check is a `security invoker` SQL function, so RLS
+keeps it to the user's own receipts. It is shown only while a receipt is in review – once confirmed,
+keeping both is the user's decision – and "Trotzdem behalten" hides it for the visit, no extra
+column.
+
+**Coverage.** The factor table knows food, drinks, pet food and fuel; cosmetics or cleaning
+products get no value and silently dropped out of the sums before. `monthly_coverage` counts
+confirmed lines with and without a value; `uncovered_items` gives a few examples. Both are loaded
+for 12 months and sliced client-side like the other monthly figures, so switching the range does
+not refetch.

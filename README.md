@@ -35,11 +35,17 @@ dashboard shows the trend, hotspots, concrete alternatives and a monthly goal.
   keep a readable size
 - **Upload from anywhere**: header button, dashboard card and receipts page share one flow; a
   bundled sample receipt shows the whole pipeline in one click
-- **Review screen** with confidence flags, a live CO₂e preview, the factor and its source
+- **Review screen** with confidence flags, a live CO₂e preview, the factor and its source;
+  merchant and date are editable, lines can be added or removed
+- **Manual entry**: a receipt without a photo, or a failed photo receipt typed in by hand next to
+  its photo; typed lines are calculated with the same function as recognised ones
+- **Duplicate warning**: same merchant, day, item count and price sum as an existing receipt → the
+  review page says so and offers to delete it, so nothing is counted twice
 - **Learns from every confirmation**: category _and_ amount per product; a correction is applied to
   other open items immediately, so the same fix is never needed twice
 - **Dashboard** with monthly trend vs. goal, breakdown by area, top hotspots and like-for-like
-  alternatives with the saving for the actual purchase
+  alternatives with the saving for the actual purchase, plus an honest coverage line ("37 of 42
+  items calculated") naming examples of what has no factor
 - **Data basis page** listing every emission factor with value, unit and the exact table row of its
   source, plus the known limits and a CSV download
 - **Account page**: profile, usage and today's AI quota, a JSON download of all data, and deleting
@@ -118,14 +124,14 @@ Gemini Flash / Groq · Vitest + Testing Library · pgTAP · Playwright + axe · 
 
 ## Quality
 
-| Layer            | What                                                                                                     |
-| ---------------- | -------------------------------------------------------------------------------------------------------- |
-| Unit & component | 398 Vitest tests: calculation, units, normalization, LLM fallback, extraction assessment, all pages      |
-| Database         | 74 pgTAP tests: RLS per role, grants, status transitions, failure codes, quota, atomic processing, views |
-| Edge function    | Deno type check of both functions in CI                                                                  |
-| End-to-end       | Playwright on desktop + mobile: magic link → upload → AI → Realtime → review → dashboard, axe            |
-| Static analysis  | strict TypeScript, type-aware lint (no floating promises, no unchecked casts), knip                      |
-| CI               | format, lint, knip, typecheck, tests, build · DB tests + types drift · Deno check · E2E                  |
+| Layer            | What                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| Unit & component | 415 Vitest tests: calculation, units, normalization, LLM fallback, extraction assessment, all pages             |
+| Database         | 89 pgTAP tests: RLS per role, grants, status transitions, failure codes, quota, manual entry, duplicates, views |
+| Edge function    | Deno type check of both functions in CI                                                                         |
+| End-to-end       | Playwright on desktop + mobile: magic link → upload → AI → Realtime → review → dashboard, axe                   |
+| Static analysis  | strict TypeScript, type-aware lint (no floating promises, no unchecked casts), knip                             |
+| CI               | format, lint, knip, typecheck, tests, build · DB tests + types drift · Deno check · E2E                         |
 
 Lighthouse (login page, production build, mobile preset, measured locally on 2026-11-10):
 Performance 94 · Accessibility 100 · Best practices 96 · SEO 100.
