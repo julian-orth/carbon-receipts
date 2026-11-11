@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { receiptKeys } from '@/features/receipts/query-keys'
-import { confirmReceipt, fetchImageUrl, fetchLineItems, saveLineItem } from './api'
+import {
+  addLineItem,
+  confirmReceipt,
+  deleteLineItem,
+  fetchDuplicateReceipts,
+  fetchImageUrl,
+  fetchLineItems,
+  saveLineItem,
+  updateReceiptDetails,
+} from './api'
+import type { NewLineItem } from './review-logic'
 import { reviewKeys } from './query-keys'
 
 export function useLineItems(receiptId: string, { enabled = true }: { enabled?: boolean } = {}) {
@@ -40,4 +50,41 @@ export function useConfirmReceipt(receiptId: string) {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]),
   })
+}
+
+export function useDuplicateReceipts(receiptId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: reviewKeys.duplicates(receiptId),
+    queryFn: () => fetchDuplicateReceipts(receiptId),
+    enabled,
+  })
+}
+
+/** Items and details change what the receipt contributes: lists, duplicates and dashboard follow. */
+function useRefreshAfterEdit() {
+  const queryClient = useQueryClient()
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: reviewKeys.all }),
+      queryClient.invalidateQueries({ queryKey: receiptKeys.all }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    ])
+}
+
+export function useAddLineItem(receiptId: string) {
+  const refresh = useRefreshAfterEdit()
+  return useMutation({
+    mutationFn: (item: NewLineItem) => addLineItem(receiptId, item),
+    onSettled: refresh,
+  })
+}
+
+export function useDeleteLineItem() {
+  const refresh = useRefreshAfterEdit()
+  return useMutation({ mutationFn: deleteLineItem, onSettled: refresh })
+}
+
+export function useUpdateReceiptDetails() {
+  const refresh = useRefreshAfterEdit()
+  return useMutation({ mutationFn: updateReceiptDetails, onSettled: refresh })
 }

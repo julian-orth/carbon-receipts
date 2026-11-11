@@ -12,6 +12,7 @@ import type { Receipt } from '@/features/receipts/types'
 import { useUploadFlow } from '@/features/receipts/upload/upload-flow-context'
 import type { LineItem } from '@/features/review/review-logic'
 import { useNow } from '@/lib/use-now'
+import { ManualEntryForFailedButton } from '@/features/receipts/components/ManualEntryButtons'
 import { ProgressPanel } from './components/ProgressPanel'
 import { ReceiptPaper } from './components/ReceiptPaper'
 import { printSchedule, summarize, toPaperLine } from './progress'
@@ -177,6 +178,14 @@ function ProcessingBody({
               <Camera aria-hidden />
               Neues Foto
             </Button>
+          )}
+          {failed && (
+            <ManualEntryForFailedButton
+              receiptId={receipt.id}
+              onStarted={onClose}
+              size="lg"
+              className="max-sm:flex-1"
+            />
           )}
           {failed && help.canRetry && (
             <Button

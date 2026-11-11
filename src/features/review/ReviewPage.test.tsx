@@ -133,6 +133,11 @@ describe('ReviewPage', () => {
     mockedApi.fetchImageUrl.mockResolvedValue('https://example.com/signed.jpg')
     mockedApi.saveLineItem.mockResolvedValue({ appliedTo: 0 })
     mockedApi.confirmReceipt.mockResolvedValue()
+    mockedApi.fetchDuplicateReceipts.mockResolvedValue([])
+    mockedApi.addLineItem.mockResolvedValue()
+    mockedApi.deleteLineItem.mockResolvedValue()
+    mockedApi.updateReceiptDetails.mockResolvedValue()
+    receipts.startManualEntry.mockResolvedValue()
   })
 
   it('shows the receipt, its progress and opens the first line that needs a look', async () => {
@@ -322,6 +327,160 @@ describe('ReviewPage', () => {
     const alert = await screen.findByRole('alert')
     await user.click(within(alert).getByRole('button', { name: 'Erneut versuchen' }))
     expect(await screen.findByRole('form', { name: 'Gouda jung Scheiben' })).toBeInTheDocument()
+  })
+})
+
+describe('ReviewPage editing', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(categoriesApi.fetchCategories).mockResolvedValue(categories)
+    receipts.fetchReceiptTotals.mockResolvedValue(new Map())
+    mockedApi.fetchLineItems.mockResolvedValue([beef])
+    mockedApi.fetchImageUrl.mockResolvedValue('https://example.com/signed.jpg')
+    mockedApi.fetchDuplicateReceipts.mockResolvedValue([])
+    mockedApi.addLineItem.mockResolvedValue()
+    mockedApi.deleteLineItem.mockResolvedValue()
+    mockedApi.updateReceiptDetails.mockResolvedValue()
+    receipts.startManualEntry.mockResolvedValue()
+    receipts.deleteReceipt.mockResolvedValue()
+  })
+
+  it('warns about a receipt that looks like one already in the list', async () => {
+    mockedApi.fetchDuplicateReceipts.mockResolvedValue([
+      {
+        id: 'other',
+        merchant: 'Beispielmarkt',
+        purchased_at: '2026-11-06',
+        status: 'done',
+        item_count: 1,
+      },
+    ])
+    const user = userEvent.setup()
+    renderReceipt()
+
+    const notice = await screen.findByLabelText('Möglicherweise doppelter Beleg')
+    expect(notice).toHaveTextContent('Beispielmarkt am 06.11.2026 mit 1 Position')
+    expect(within(notice).getByRole('link', { name: 'Anderen Beleg ansehen' })).toHaveAttribute(
+      'href',
+      '/receipts/other',
+    )
+    await user.click(within(notice).getByRole('button', { name: 'Trotzdem behalten' }))
+    expect(screen.queryByLabelText('Möglicherweise doppelter Beleg')).toBeNull()
+  })
+
+  it('does not ask about duplicates once the receipt is confirmed', async () => {
+    renderReceipt(receiptFixture({ ...receipt, status: 'done' }))
+    await screen.findByRole('heading', { name: 'Positionen' })
+    expect(mockedApi.fetchDuplicateReceipts).not.toHaveBeenCalled()
+  })
+
+  it('adds a line with a calculated value and keeps the form for the next one', async () => {
+    const user = userEvent.setup()
+    renderReceipt()
+    await screen.findByRole('heading', { name: 'Positionen' })
+
+    await user.click(screen.getByRole('button', { name: 'Position hinzufügen' }))
+    const form = screen.getByRole('form', { name: 'Position hinzufügen' })
+    await user.type(within(form).getByLabelText('Name auf dem Bon'), 'Haferdrink')
+    await user.click(within(form).getByRole('button', { name: /Kategorie/ }))
+    const [firstOption] = screen.getAllByRole('option', { name: /Haferdrink/ })
+    if (!firstOption) throw new Error('no option')
+    await user.click(firstOption)
+    await user.type(within(form).getByLabelText('Menge'), '1')
+    expect(within(form).getByText('300 g CO₂e')).toBeInTheDocument()
+    await user.click(within(form).getByRole('button', { name: 'Hinzufügen' }))
+
+    expect(mockedApi.addLineItem).toHaveBeenCalledWith('r1', {
+      raw_text: 'Haferdrink',
+      normalized_name: 'haferdrink',
+      category_id: 'oat',
+      quantity: 1,
+      unit: 'l',
+      quantity_source: 'user',
+      price: null,
+      co2e_kg: 0.3,
+      position: 2,
+      reviewed: true,
+    })
+    expect(await within(form).findByText('Haferdrink hinzugefügt.')).toBeInTheDocument()
+    expect(within(form).getByLabelText('Name auf dem Bon')).toHaveValue('')
+  })
+
+  it('needs a name and a category before adding', async () => {
+    const user = userEvent.setup()
+    renderReceipt()
+    await screen.findByRole('heading', { name: 'Positionen' })
+    await user.click(screen.getByRole('button', { name: 'Position hinzufügen' }))
+    const form = screen.getByRole('form', { name: 'Position hinzufügen' })
+    await user.click(within(form).getByRole('button', { name: 'Hinzufügen' }))
+
+    expect(await within(form).findByText(/Bitte einen Namen/)).toBeInTheDocument()
+    expect(within(form).getByText('Bitte eine Kategorie wählen')).toBeInTheDocument()
+    expect(mockedApi.addLineItem).not.toHaveBeenCalled()
+  })
+
+  it('removes a line', async () => {
+    const user = userEvent.setup()
+    renderReceipt()
+    await user.click(await screen.findByRole('button', { name: /Rinderhack 500g/ }))
+    await user.click(
+      within(screen.getByRole('form', { name: 'Rinderhack 500g' })).getByRole('button', {
+        name: 'Entfernen',
+      }),
+    )
+    expect(mockedApi.deleteLineItem).toHaveBeenCalledWith('i-beef', expect.anything())
+  })
+
+  it('changes merchant and date', async () => {
+    const user = userEvent.setup()
+    renderReceipt()
+    await user.click(await screen.findByRole('button', { name: 'Händler und Datum ändern' }))
+    const form = screen.getByRole('form', { name: 'Händler und Datum ändern' })
+    const merchant = within(form).getByLabelText('Händler')
+    await user.clear(merchant)
+    await user.type(merchant, 'Edeka')
+    await user.click(within(form).getByRole('button', { name: 'Speichern' }))
+
+    expect(mockedApi.updateReceiptDetails).toHaveBeenCalledWith(
+      { id: 'r1', merchant: 'Edeka', purchasedAt: '2026-11-06' },
+      expect.anything(),
+    )
+  })
+
+  it('shows a receipt entered by hand without a photo and starts the form open', async () => {
+    mockedApi.fetchLineItems.mockResolvedValue([])
+    renderReceipt(
+      receiptFixture({
+        id: 'm1',
+        status: 'review',
+        source_type: 'manual',
+        file_path: null,
+        original_filename: null,
+      }),
+    )
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Von Hand erfasst' }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('Noch keine Positionen. Füge unten die erste hinzu.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Position hinzufügen' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Foto des Belegs')).toBeNull()
+  })
+
+  it('lets a failed receipt be typed in by hand', async () => {
+    const failed = receiptFixture({
+      id: 'f1',
+      status: 'failed',
+      error: 'Der Bon ist auf dem Foto abgeschnitten.',
+      error_code: 'cut_off',
+    })
+    const user = userEvent.setup()
+    renderReceipt(failed)
+    const dialog = await screen.findByRole('dialog', { name: 'Beleg analysieren' })
+    await user.click(within(dialog).getByRole('button', { name: 'Von Hand erfassen' }))
+    expect(receipts.startManualEntry).toHaveBeenCalledWith('f1', expect.anything())
   })
 })
 

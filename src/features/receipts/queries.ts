@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  createManualReceipt,
   deleteReceipt,
   fetchReceipts,
   fetchReceiptTotals,
   retryReceipt,
+  startManualEntry,
   startProcessing,
   uploadReceipt,
 } from './api'
@@ -52,6 +54,23 @@ export function useStartProcessing() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: startProcessing,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: receiptKeys.list() }),
+  })
+}
+
+export function useCreateManualReceipt() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createManualReceipt,
+    // Awaited before the caller continues, so the receipt page finds the receipt in the list.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: receiptKeys.list() }),
+  })
+}
+
+export function useStartManualEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: startManualEntry,
     onSettled: () => queryClient.invalidateQueries({ queryKey: receiptKeys.list() }),
   })
 }

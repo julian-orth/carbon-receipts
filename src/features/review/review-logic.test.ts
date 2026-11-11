@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import type { EmissionCategory } from '@/features/categories/categories'
 import {
   attentionReasons,
+  buildNewItem,
   computeCo2e,
   formatQuantityInput,
   learnedUpdate,
   type LineItem,
+  nextPosition,
+  parsePriceInput,
   parseQuantityInput,
 } from './review-logic'
 
@@ -203,5 +206,55 @@ describe('learnedUpdate', () => {
         cheese,
       ),
     ).toBeNull()
+  })
+})
+
+describe('buildNewItem', () => {
+  it('builds a reviewed line, calculated like a recognised one', () => {
+    expect(
+      buildNewItem(
+        { name: '  Hafermilch ', categoryId: 'milk', quantity: 1.5, unit: 'l', price: 1.99 },
+        milk,
+        4,
+      ),
+    ).toEqual({
+      raw_text: 'Hafermilch',
+      normalized_name: 'hafermilch',
+      category_id: 'milk',
+      quantity: 1.5,
+      unit: 'l',
+      quantity_source: 'user',
+      price: 1.99,
+      co2e_kg: 2.1,
+      position: 4,
+      reviewed: true,
+    })
+  })
+
+  it('keeps a line without amount, without a value', () => {
+    const item = buildNewItem(
+      { name: 'Hack', categoryId: 'beef', quantity: null, unit: null, price: null },
+      beef,
+      1,
+    )
+    expect(item.co2e_kg).toBeNull()
+    expect(item.quantity_source).toBeNull()
+  })
+})
+
+describe('nextPosition', () => {
+  it('appends after the last line, starting at 1', () => {
+    expect(nextPosition([])).toBe(1)
+    expect(nextPosition([{ position: 3 }, { position: 7 }])).toBe(8)
+  })
+})
+
+describe('parsePriceInput', () => {
+  it('accepts empty, decimal comma and zero, rejects negatives and text', () => {
+    expect(parsePriceInput('')).toBeNull()
+    expect(parsePriceInput('2,49')).toBe(2.49)
+    expect(parsePriceInput('0')).toBe(0)
+    expect(parsePriceInput('-1')).toBeUndefined()
+    expect(parsePriceInput('abc')).toBeUndefined()
   })
 })

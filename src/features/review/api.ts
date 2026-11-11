@@ -2,7 +2,7 @@ import { RECEIPTS_BUCKET } from '@/features/receipts/api'
 import { supabase } from '@/lib/supabase'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
 import type { EmissionCategory } from '@/features/categories/categories'
-import { type Learned, learnedUpdate, type LineItem } from './review-logic'
+import { type Learned, learnedUpdate, type LineItem, type NewLineItem } from './review-logic'
 
 export async function fetchLineItems(receiptId: string): Promise<LineItem[]> {
   const { data, error } = await supabase
@@ -140,5 +140,47 @@ export async function confirmReceipt(receiptId: string): Promise<void> {
     .update({ status: 'done' })
     .eq('id', receiptId)
     .eq('status', 'review')
+  if (error) throw error
+}
+
+export type DuplicateReceipt = {
+  id: string
+  merchant: string
+  purchased_at: string
+  status: 'review' | 'done'
+  item_count: number
+}
+
+/** Other receipts with the same merchant, day, item count and price sum. */
+export async function fetchDuplicateReceipts(receiptId: string): Promise<DuplicateReceipt[]> {
+  const { data, error } = await supabase.rpc('find_duplicate_receipts', {
+    p_receipt_id: receiptId,
+  })
+  if (error) throw error
+  return data.flatMap((row) =>
+    row.status === 'review' || row.status === 'done' ? [{ ...row, status: row.status }] : [],
+  )
+}
+
+export async function addLineItem(receiptId: string, item: NewLineItem): Promise<void> {
+  const { error } = await supabase.from('line_items').insert({ receipt_id: receiptId, ...item })
+  if (error) throw error
+}
+
+export async function deleteLineItem(id: string): Promise<void> {
+  const { error } = await supabase.from('line_items').delete().eq('id', id)
+  if (error) throw error
+}
+
+export type ReceiptDetails = { id: string; merchant: string | null; purchasedAt: string | null }
+
+export async function updateReceiptDetails(details: ReceiptDetails): Promise<void> {
+  const { error } = await supabase
+    .from('receipts')
+    .update({
+      merchant: details.merchant?.trim() || null,
+      purchased_at: details.purchasedAt || null,
+    })
+    .eq('id', details.id)
   if (error) throw error
 }

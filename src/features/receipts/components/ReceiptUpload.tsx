@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/features/auth/auth-context'
 import { STEPS } from '@/features/processing/steps'
 import { cn } from '@/lib/utils'
+import { NewManualReceiptButton } from './ManualEntryButtons'
 import { SampleReceiptButton } from '../upload/SampleReceiptButton'
 import { ACCEPT_ATTRIBUTE } from '../file-validation'
 import { useUploadFlow } from '../upload/upload-flow-context'
@@ -157,8 +158,9 @@ export function ReceiptUpload() {
 
       <HowItWorks />
 
-      <div className="lg:col-span-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:col-span-2">
         <SampleReceiptButton className="-ml-3" />
+        <NewManualReceiptButton className="border-transparent bg-transparent text-muted-foreground shadow-none hover:text-foreground" />
       </div>
 
       <p className="flex gap-2 text-[13px] leading-normal text-muted-foreground lg:col-span-2">

@@ -18,6 +18,7 @@ import { useEmissionCategories } from '@/features/categories/categories'
 import { MiniSteps } from '@/features/processing/components/MiniSteps'
 import { ProcessingDialog } from '@/features/processing/ProcessingDialog'
 import { isFromUpload, serverStepIndex, STEPS } from '@/features/processing/steps'
+import { ManualEntryForFailedButton } from '@/features/receipts/components/ManualEntryButtons'
 import { ReceiptStatusBadge } from '@/features/receipts/components/ReceiptStatusBadge'
 import { failureHelp, noteHelp } from '@/features/receipts/failure'
 import { useReceipts } from '@/features/receipts/queries'
@@ -28,7 +29,10 @@ import { formatCo2e } from '@/lib/format-co2'
 import { prefersReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { sumCo2e } from '@shared/emissions/calculate.ts'
+import { AddItemForm } from './components/AddItemForm'
+import { DuplicateNotice } from './components/DuplicateNotice'
 import { LineItemRow, type SaveResult } from './components/LineItemRow'
+import { ReceiptDetailsEditor } from './components/ReceiptDetailsEditor'
 import { useConfirmReceipt, useLineItems, useReceiptImage } from './queries'
 import { attentionReasons, type LineItem } from './review-logic'
 
@@ -101,7 +105,9 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
     () => new Map((categories.data ?? []).map((category) => [category.id, category])),
     [categories.data],
   )
-  const title = receipt.merchant ?? receipt.original_filename ?? 'Beleg'
+  const manual = receipt.file_path === null
+  const title =
+    receipt.merchant ?? receipt.original_filename ?? (manual ? 'Von Hand erfasst' : 'Beleg')
   const itemsReady = complete && items.isSuccess && categories.isSuccess
 
   return (
@@ -114,9 +120,16 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
         <ArrowLeft aria-hidden className="size-4" /> Alle Belege
       </Link>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div
+        className={cn(
+          'grid items-start gap-6',
+          !manual && 'lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]',
+        )}
+      >
         <div className="min-w-0 space-y-6">
           <ReceiptHeader receipt={receipt} title={title} items={itemsReady ? items.data : null} />
+          {complete && <ReceiptDetailsEditor key={receipt.updated_at} receipt={receipt} />}
+          {complete && <DuplicateNotice receipt={receipt} />}
           {!complete ? (
             <AnalysisPlaceholder receipt={receipt} onShowProgress={() => setDismissed(false)} />
           ) : items.isError || categories.isError ? (
@@ -137,14 +150,16 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
           )}
         </div>
 
-        <aside aria-label="Foto des Belegs" className="lg:sticky lg:top-20">
-          <PhotoPanel
-            path={receipt.file_path}
-            url={image.data ?? null}
-            loading={image.isPending}
-            error={image.isError}
-          />
-        </aside>
+        {!manual && (
+          <aside aria-label="Foto des Belegs" className="lg:sticky lg:top-20">
+            <PhotoPanel
+              path={receipt.file_path}
+              url={image.data ?? null}
+              loading={image.isPending}
+              error={image.isError}
+            />
+          </aside>
+        )}
       </div>
 
       {watching && (
@@ -259,6 +274,7 @@ function AnalysisPlaceholder({
               : 'Details'
             : 'Fortschritt anzeigen'}
         </Button>
+        {failed && <ManualEntryForFailedButton receiptId={receipt.id} />}
       </div>
     </section>
   )
@@ -432,7 +448,9 @@ function ItemEditor({
 
         {items.length === 0 ? (
           <p className="rounded-2xl border p-6 text-center text-muted-foreground">
-            Auf diesem Beleg wurden keine Positionen erkannt.
+            {receipt.file_path === null || receipt.status === 'review'
+              ? 'Noch keine Positionen. Füge unten die erste hinzu.'
+              : 'Auf diesem Beleg wurden keine Positionen erkannt.'}
           </p>
         ) : shown.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed p-8 text-center">
@@ -460,6 +478,13 @@ function ItemEditor({
             ))}
           </ul>
         )}
+        <AddItemForm
+          receiptId={receipt.id}
+          items={items}
+          categories={categories}
+          categoriesById={categoriesById}
+          startOpen={items.length === 0}
+        />
       </section>
 
       {receipt.status === 'review' && (

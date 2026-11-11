@@ -110,3 +110,23 @@ export async function retryReceipt(id: string) {
   if (error) throw error
   await startProcessing(id)
 }
+
+/** Local calendar day as ISO date (`YYYY-MM-DD`), the format of a `date` column. */
+export function isoDay(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/** An empty receipt in review for typing the items in by hand; returns its id. */
+export async function createManualReceipt(purchasedAt: string): Promise<string> {
+  const { data, error } = await supabase.rpc('create_manual_receipt', {
+    p_purchased_at: purchasedAt,
+  })
+  if (error) throw error
+  return data
+}
+
+/** Turns a failed receipt into one in review; its photo stays for comparison. */
+export async function startManualEntry(receiptId: string): Promise<void> {
+  const { error } = await supabase.rpc('start_manual_entry', { p_receipt_id: receiptId })
+  if (error) throw error
+}

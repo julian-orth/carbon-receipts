@@ -114,3 +114,67 @@ export function learnedUpdate(
     item.quantity_source === next.quantity_source
   return unchanged ? null : next
 }
+
+export type NewItemDraft = {
+  name: string
+  categoryId: string
+  quantity: number | null
+  unit: EmissionUnit | null
+  price: number | null
+}
+
+/** A line typed in by hand: complete, calculated like every other line, and already reviewed. */
+export type NewLineItem = Pick<
+  LineItem,
+  | 'raw_text'
+  | 'normalized_name'
+  | 'category_id'
+  | 'quantity'
+  | 'unit'
+  | 'quantity_source'
+  | 'price'
+  | 'co2e_kg'
+  | 'position'
+  | 'reviewed'
+>
+
+export function nextPosition(items: readonly Pick<LineItem, 'position'>[]): number {
+  return items.reduce((max, item) => Math.max(max, item.position), 0) + 1
+}
+
+export function buildNewItem(
+  draft: NewItemDraft,
+  category: EmissionCategory,
+  position: number,
+): NewLineItem {
+  const name = draft.name.trim()
+  const result = computeCo2e(
+    {
+      categoryId: draft.categoryId,
+      quantity: draft.quantity,
+      unit: draft.unit,
+      price: draft.price,
+    },
+    category,
+  )
+  return {
+    raw_text: name,
+    // The same key the learning loop uses (`normalized_name = lower(trim(...))` in the database).
+    normalized_name: name.toLowerCase(),
+    category_id: draft.categoryId,
+    quantity: draft.quantity,
+    unit: draft.unit,
+    quantity_source: draft.quantity === null ? null : 'user',
+    price: draft.price,
+    co2e_kg: result.ok ? result.co2eKg : null,
+    position,
+    reviewed: true,
+  }
+}
+
+/** Parses a price input ("2,49"); empty → null, invalid → undefined. */
+export function parsePriceInput(value: string): number | null | undefined {
+  if (value.trim() === '') return null
+  const parsed = parseDecimal(value)
+  return parsed !== null && parsed >= 0 ? parsed : undefined
+}

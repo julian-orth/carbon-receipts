@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, ChevronDown, CornerDownLeft, Info, TriangleAlert } from 'lucide-react'
+import { Check, ChevronDown, CornerDownLeft, Info, Trash2, TriangleAlert } from 'lucide-react'
 import { type KeyboardEvent, useId, useMemo } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -14,7 +14,7 @@ import { formatFactor } from '@/features/categories/category-visuals'
 import { formatCo2e } from '@/lib/format-co2'
 import { cn } from '@/lib/utils'
 import type { EmissionUnit } from '@shared/emissions/types.ts'
-import { useSaveLineItem } from '../queries'
+import { useDeleteLineItem, useSaveLineItem } from '../queries'
 import {
   ATTENTION_LABEL,
   attentionReasons,
@@ -80,6 +80,7 @@ export function LineItemRow({
   enterDelayMs = null,
 }: LineItemRowProps) {
   const save = useSaveLineItem()
+  const remove = useDeleteLineItem()
   const baseId = useId()
   const values = useMemo(() => formValues(item), [item])
   const form = useForm<RowForm>({
@@ -380,9 +381,21 @@ export function LineItemRow({
           </output>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {save.isError && (
-              <span role="alert" className="mr-auto text-sm text-destructive">
-                Speichern fehlgeschlagen. Bitte erneut versuchen.
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate(item.id)}
+              className="mr-auto text-muted-foreground hover:text-destructive"
+            >
+              {remove.isPending ? <Spinner /> : <Trash2 aria-hidden />}
+              Entfernen
+            </Button>
+            {(save.isError || remove.isError) && (
+              <span role="alert" className="text-sm text-destructive">
+                {remove.isError
+                  ? 'Entfernen fehlgeschlagen. Bitte erneut versuchen.'
+                  : 'Speichern fehlgeschlagen. Bitte erneut versuchen.'}
               </span>
             )}
             <Button type="button" variant="ghost" onClick={cancel}>

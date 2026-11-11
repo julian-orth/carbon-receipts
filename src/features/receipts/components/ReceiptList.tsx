@@ -18,7 +18,11 @@ import { DeleteReceiptButton } from './DeleteReceiptButton'
 import { ReceiptStatusBadge } from './ReceiptStatusBadge'
 
 function receiptLabel(receipt: Receipt): string {
-  return receipt.merchant ?? receipt.original_filename ?? 'Beleg'
+  return (
+    receipt.merchant ??
+    receipt.original_filename ??
+    (receipt.source_type === 'manual' ? 'Von Hand erfasst' : 'Beleg')
+  )
 }
 
 const isInProgress = (receipt: Receipt) =>
